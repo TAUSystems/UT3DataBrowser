@@ -1,0 +1,50 @@
+# -*- encoding: utf-8 -*-
+"""
+Copyright (c) 2019 - present AppSeed.us
+"""
+from __future__ import annotations
+
+from typing import Optional
+from operator import attrgetter
+
+from apps.home import blueprint
+from flask import render_template, request, redirect
+
+from ..logic.scans import get_scans, get_scans
+from .forms import SettingsForm
+from ..logic.settings import save_config, load_config
+
+@blueprint.route('/index')
+def index():
+    return render_template('home/index.html', segment='index')
+
+@blueprint.route('/')
+@blueprint.route('/scans')
+def list_scans():
+    return render_template("home/scans.html", experiment_table_items=get_scans())
+
+@blueprint.route('/settings', methods=['GET', 'POST'])
+def settings():
+    
+    form = SettingsForm()
+
+    if form.validate_on_submit():
+        save_config(form.data)
+        return redirect("/")
+
+    else:
+        config = load_config()
+        form.epics_daq_test_folder_path.data = config['Directories']['epics_daq_test_folder_path']
+
+        return render_template("home/settings.html", form=form)
+
+
+@blueprint.app_errorhandler(404) 
+def not_found(e): 
+  # defining function 
+  return render_template("home/page-404.html"), 404
+
+@blueprint.app_errorhandler(500) 
+def unspecified_error(e): 
+  # defining function 
+  return render_template("home/page-500.html"), 500
