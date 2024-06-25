@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, TextAreaField, SelectField
+from wtforms import PasswordField, StringField, SubmitField, TextAreaField, SelectField
 from wtforms.validators import InputRequired, Regexp
 
 class SettingsForm(FlaskForm):
@@ -9,4 +9,26 @@ class SettingsForm(FlaskForm):
         description="Folder containing data and analysis folders for the EPICS-DAQ-Test experiment", 
     )
     
+    measurement_db_host = StringField("Measurement DB host",
+        description="IP address or hostname of the measurement database server",
+    )
+
+    measurement_db_port = StringField("Measurement DB port",
+        description="Port of the measurement database server",
+        default="3306",
+    )
+
+    measurement_db_dbname = StringField("Measurement DB database name",
+        description="Name of the database in the measurement database server",
+        default="",
+    )
+
+    measurement_db_username = StringField("Measurement DB username",
+        description="Username to access the measurement database server",
+    )
+
+    measurement_db_password = PasswordField("Measurement DB password",
+        description="Password to access the measurement database server",
+    )
+
     submit = SubmitField("Save settings")
