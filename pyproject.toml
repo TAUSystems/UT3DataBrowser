@@ -22,3 +22,6 @@ flask-wtf = "^1.2.1"
 python-decouple = "^3.8"
 bootstrap-flask = "^2.3.3"
 platformdirs = "^4.1.0"
+
+sqlalchemy = "^2.0.25"
+mariadb = "^1.1.10"
