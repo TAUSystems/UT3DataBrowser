@@ -1,6 +1,6 @@
 {% extends 'layouts/base.html' %}
 
-{% block title %} Experiments {% endblock title %}
+{% block title %} Scans {% endblock title %}
 
 {% block content %}
 
@@ -9,7 +9,7 @@
       <div class="header-body">
         <div class="row align-items-center py-4">
           <div class="col-lg-6 col-7">
-            <h6 class="h2 text-white d-inline-block mb-0">Experiments</h6>
+            <h6 class="h2 text-white d-inline-block mb-0">Scans</h6>
           </div>
           <div class="col-lg-6 col-5 text-right">
             <a href="/scans" class="btn btn-sm btn-neutral">Reload</a>
@@ -30,22 +30,18 @@
             <table class="table align-items-center table-flush">
               <thead class="thead-light">
                 <tr>
-                  <th scope="col" class="sort" data-sort="name">Experiment</th>
-                  <th scope="col" class="sort" data-sort="description">Description</th>
-                  <th scope="col" class="sort" data-sort="num_runs">Number of Runs</th>
+                  <th scope="col" class="sort" data-sort="name">Session / Scan</th>
+                  <th scope="col" class="sort" data-sort="description">Title</th>
                 </tr>
               </thead>
               <tbody class="list">
-                {% for item in experiment_table_items %}
+                {% for scan in scans_table_items %}
                 <tr>
                   <th scope="row">
-                    <a href="/experiments/{{item.name}}">{{item.name}}</a>
+                    <a href="/scans/{{scan.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f')}}">{{scan.session_timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z')}} / Scan {{scan.seq}}</a>
                   </th>
                   <td>
-                    {{item.description}}
-                  </td>
-                  <td>
-                    {{item.num_runs}}
+                    {{scan.title}}
                   </td>
                 </tr>
                 {% endfor %}

@@ -1,6 +1,6 @@
 {% extends 'layouts/base.html' %}
 
-{% block title %} Scan {{ scan.name }} {% endblock title %}
+{% block title %} {{scan.session_timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z')}} / Scan {{scan.seq}} {% endblock title %}
 
 {% block content %}
 
@@ -9,7 +9,7 @@
       <div class="header-body">
         <div class="row align-items-center py-4">
           <div class="col-lg-6 col-7">
-            <h6 class="h2 text-white d-inline-block mb-0">{{ scan.name }}</h6>
+            <h6 class="h2 text-white d-inline-block mb-0">{{scan.session_timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z')}} / Scan {{scan.seq}}</h6>
           </div>
           <div class="col-lg-6 col-5 text-right">
             <a href="/scans" class="btn btn-sm btn-neutral">Scans</a>
@@ -25,19 +25,33 @@
       <div class="col">
 
         <div class="card card-stats">
-          <!-- Run information -->
+          <!-- Scan information -->
           <div class="card-body">
             <div class="row">
               <div class="col">
                 <h5 class="card-title text-uppercase text-muted mb-0">Information</h5>
               </div>
             </div>
-            <h5>Name</h5>
-            <p class="text-sm">{{ scan.name }}</p>
+            <h5>Session timestamp</h5>
+            <p class="text-sm">{{ scan.session_timestamp }}</p>
+            <h5>Scan number</h5>
+            <p class="text-sm">{{ scan.seq }}</p>
+            <h5>Scan timestamp</h5>
+            <p class="text-sm">{{ scan.timestamp }}</p>
             <h5>Description</h5>
-            <p class="text-sm">{{ scan.description }}</p>
+            <p class="text-sm">{{ scan.title }}</p>
+            <h5>Notes</h5>
+            <p class="text-sm">{{ scan.notes }}</p>
           </div>
         </div>
+
+        <div class="card card-stats">
+          <!-- Scan images -->
+          <div class="card-body">
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam auctor, nunc nec
+          </div>
+        </div>
+
       </div>
     </div>
 

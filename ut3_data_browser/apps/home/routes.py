@@ -4,11 +4,8 @@ Copyright (c) 2019 - present AppSeed.us
 """
 from __future__ import annotations
 
-from typing import Optional
-from operator import attrgetter
-
 from apps.home import blueprint
-from flask import render_template, request, redirect
+from flask import render_template, redirect
 
 from ..logic.scans import get_scans, get_scans
 from .forms import SettingsForm
@@ -21,11 +18,11 @@ def index():
 @blueprint.route('/')
 @blueprint.route('/scans')
 def list_scans():
-    return render_template("home/scans.html", experiment_table_items=get_scans())
+    return render_template("home/scans.html", scans_table_items=get_scans())
 
 @blueprint.route('/settings', methods=['GET', 'POST'])
 def settings():
-    
+
     form = SettingsForm()
 
     if form.validate_on_submit():
