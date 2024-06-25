@@ -7,7 +7,9 @@ from __future__ import annotations
 from apps.home import blueprint
 from flask import render_template, redirect
 
-from ..logic.scans import get_scans, get_scans
+from datetime import datetime
+
+from ..logic.scans import get_scans, get_scan
 from .forms import SettingsForm
 from ..logic.settings import save_config, load_config
 
@@ -19,6 +21,10 @@ def index():
 @blueprint.route('/scans')
 def list_scans():
     return render_template("home/scans.html", scans_table_items=get_scans())
+
+@blueprint.route('/scans/<timestamp>')
+def show_scan(timestamp: str):
+    return render_template("home/scan.html", scan=get_scan(datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%f')))
 
 @blueprint.route('/settings', methods=['GET', 'POST'])
 def settings():

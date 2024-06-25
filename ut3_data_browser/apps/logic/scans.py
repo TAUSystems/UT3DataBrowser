@@ -1,39 +1,43 @@
 from __future__ import annotations
 
-from typing import NamedTuple
-from pathlib import Path
-from .settings import load_config
-from datetime import datetime, timedelta
+from typing import TYPE_CHECKING, NamedTuple
+from datetime import datetime
+from datetime import timezone as tz
 
-Scan = NamedTuple("Scan", [("timestamp", datetime), ("description", str), ("session_timestamp", datetime), ("seq", int)])
+from sqlalchemy import select
+if TYPE_CHECKING:
+    from sqlalchemy import Row
+
+from .settings import load_config
+from .utils.measurement_db import get_scan_table, get_sqlalchemy_engine
+
+sqlalchemy_engine = get_sqlalchemy_engine()
+scan_table = get_scan_table()
+
+class Scan(NamedTuple):
+    timestamp: datetime
+    title: str
+    session_timestamp: datetime
+    seq: int
+    notes: str
+
+def row_to_scan(row: Row) -> Scan:
+    return Scan(
+                timestamp = row.timestamp.replace(tzinfo=tz.utc),
+                title = row.title,
+                session_timestamp = row.session_timestamp.replace(tzinfo=tz.utc),
+                seq = row.seq,
+                notes = row.notes,
+            )
 
 def get_scans() -> list[Scan]:
-    config = load_config()
+    with sqlalchemy_engine.connect() as connection:
+        return [row_to_scan(row) for row in connection.execute(select(scan_table))]
 
-    session_timestamp = datetime.now()
-
-    scans = [
-        Scan(
-            timestamp = datetime.now(),
-            description = "broad Z-scan",
-            session_timestamp = session_timestamp,
-            seq = 1,
-        ),
-        Scan(
-            timestamp = datetime.now() + timedelta(seconds=123),
-            description = "narrower Z-scan",
-            session_timestamp = session_timestamp,
-            seq = 2,
-        ),
-    ]
-
-    return scans
-
-
-def get_scan(scan_name: str) -> Scan:
-    config = load_config()
-
-    return Scan(
-                name = "some_scan",
-                description = "description of some_scan",
-            )
+def get_scan(timestamp: datetime) -> Scan:
+    with sqlalchemy_engine.connect() as connection:
+        row = connection.execute(select(scan_table).where(scan_table.c.timestamp == timestamp)).fetchone()
+        if row is None:
+            raise ValueError(f"Scan with timestamp {timestamp} not found.")
+        
+        return row_to_scan(row)
