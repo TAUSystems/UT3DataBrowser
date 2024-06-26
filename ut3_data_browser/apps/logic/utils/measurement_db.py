@@ -21,13 +21,11 @@ def get_sqlalchemy_engine():
                             password=measurement_db_config.get('MEASUREMENT_DB_PASSWORD'),
                         ))
 
-def get_scan_table() -> Table:
+def get_tables() -> dict[str, Table]:
     sqlalchemy_engine = get_sqlalchemy_engine()
 
     measurement_db_metadata = MetaData()
     measurement_db_metadata.reflect(sqlalchemy_engine)
 
-    scan_table  = measurement_db_metadata.tables['scan']
-
-    return scan_table
+    return measurement_db_metadata.tables
 
