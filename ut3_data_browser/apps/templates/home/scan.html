@@ -48,7 +48,29 @@
         <div class="card card-stats">
           <!-- Scan images -->
           <div class="card-body">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam auctor, nunc nec
+            <table class="table align-items-center table-flush">
+              <thead class="thead-light">
+                <tr>
+                  <th scope="col" class="sort" data-sort="name">Session / Scan</th>
+                  <th scope="col" class="sort" data-sort="description">Title</th>
+                </tr>
+              </thead>
+              <tbody class="list">
+                {% for scan_result in scan_results %}
+                <tr>
+                  <td scope="row">
+                    Horizontal position = {{ scan_result.horizontal_position }}<br/>
+                    Vertical position = {{ scan_result.vertical_position }}<br/>
+                    Longitudinal position = {{ scan_result.longitudinal_position }}<br/>
+                  </td>
+                  <td>
+                    <img src="{{ scan_result.pointing_and_spectrum_path }}" alt="Pointing and spectrum" width="100%"/><br/>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+
           </div>
         </div>
 

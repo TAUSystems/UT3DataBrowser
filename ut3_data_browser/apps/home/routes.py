@@ -24,7 +24,10 @@ def list_scans():
 
 @blueprint.route('/scans/<timestamp>')
 def show_scan(timestamp: str):
-    return render_template("home/scan.html", scan=get_scan(datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%f')))
+    scan_timestamp: datetime = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%f')
+    scan = get_scan(scan_timestamp)
+    scan_results = get_scan_results_for_scan_page(scan_timestamp)
+    return render_template("home/scan.html", scan=scan, scan_results=scan_results)
 
 @blueprint.route('/settings', methods=['GET', 'POST'])
 def settings():
