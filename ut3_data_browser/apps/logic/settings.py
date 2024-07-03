@@ -7,10 +7,12 @@ from configparser import ConfigParser
 from dotenv import dotenv_values
 from os import environ
 
-def load_config():
+from ..types import ConfigurationDict
+
+def load_config() -> ConfigurationDict:
     return DotenvConfiguration().load()
 
-def save_config(form_data: dict):
+def save_config(form_data: dict) -> None:
     UserDataConfiguration().save(form_data)
 
 class Configuration:
@@ -20,7 +22,7 @@ class Configuration:
     def save(self) -> None:
         raise NotImplementedError("Subclasses must implement this method")
     
-    def load(self) -> dict:
+    def load(self) -> ConfigurationDict:
         raise NotImplementedError("Subclasses must implement this method")
 
 class DotenvConfiguration(Configuration):
@@ -29,7 +31,7 @@ class DotenvConfiguration(Configuration):
     def save(self, form_data: dict):
         raise NotImplementedError("Cannot save to .env file")
     
-    def load(self):
+    def load(self) -> ConfigurationDict:
         env = dotenv_values()
         return {
             'directories': {
@@ -51,7 +53,7 @@ class OSEnvConfiguration(Configuration):
     def save(self):
         raise NotImplementedError("Cannot save to OS environment variables")
 
-    def load(self):
+    def load(self) -> ConfigurationDict:
         return {
             'directories': {
                 'epics_daq_test_folder_path': environ.get('EPICS_DAQ_TEST_FOLDER_PATH', ''),
@@ -95,7 +97,7 @@ class UserDataConfiguration(Configuration):
         with self.config_path().open('w') as f:
             cp.write(f)
 
-    def load(self) -> dict[str, dict[str, str]]:
+    def load(self) -> ConfigurationDict:
         cp = ConfigParser()
 
         try:
