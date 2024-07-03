@@ -4,55 +4,120 @@ from platformdirs import user_data_dir
 from pathlib import Path
 from configparser import ConfigParser
 
-def config_path() -> Path:
-    return Path(user_data_dir(appname="ut3_data_browser", appauthor="TAUSystems")) / "config.ini"
+from dotenv import dotenv_values
+from os import environ
 
+def load_config():
+    return DotenvConfiguration().load()
 
 def save_config(form_data: dict):
-    cp = ConfigParser()
-    cp['directories'] = {
-        'epics_daq_test_folder_path': form_data['epics_daq_test_folder_path'],
-    }
+    UserDataConfiguration().save(form_data)
 
-    cp['Database'] = {
-        'measurement_db_host': form_data['measurement_db_host'],
-        'measurement_db_port': form_data['measurement_db_port'],
-        'measurement_db_dbname': form_data['measurement_db_dbname'],
-        'measurement_db_username': form_data['measurement_db_username'],
-        'measurement_db_password': form_data['measurement_db_password'],
-    }
+class Configuration:
+    def __init__(self):
+        pass
 
-    config_path().parent.mkdir(parents=True, exist_ok=True)
+    def save(self) -> None:
+        raise NotImplementedError("Subclasses must implement this method")
+    
+    def load(self) -> dict:
+        raise NotImplementedError("Subclasses must implement this method")
 
-    with config_path().open('w') as f:
-        cp.write(f)
-
-def load_config() -> dict[str, dict[str, str]]:
-    cp = ConfigParser()
-
-    try:
-        if not config_path().exists():
-            raise FileNotFoundError("Config file does not exist.")
-
-        cp.read(config_path())
-
-        if 'directories' not in cp.sections():
-            raise ValueError("directories not found in config")
-
-        if 'measurement_db' not in cp.sections():
-            raise ValueError("measurement_db not found in config")
-
-        return {section_name: dict(cp.items(section_name)) for section_name in cp.sections()}
-
-    except:
-        return {'directories': {
-                    'epics_daq_test_folder_path': "",
-                }, 
-                'measurement_db': {
-                    'host': "",
-                    'port': "",
-                    'dbname': "",
-                    'username': "",
-                    'password': "",
-                }
+class DotenvConfiguration(Configuration):
+    """Saves and loads configuration from a .env file
+    """
+    def save(self, form_data: dict):
+        raise NotImplementedError("Cannot save to .env file")
+    
+    def load(self):
+        env = dotenv_values()
+        return {
+            'directories': {
+                'epics_daq_test_folder_path': env.get('EPICS_DAQ_TEST_FOLDER_PATH', ''),
+            },
+            'measurement_db': {
+                'host': env.get('MEASUREMENT_DB_HOST', ''),
+                'port': env.get('MEASUREMENT_DB_PORT', ''),
+                'dbname': env.get('MEASUREMENT_DB_DBNAME', ''),
+                'username': env.get('MEASUREMENT_DB_USERNAME', ''),
+                'password': env.get('MEASUREMENT_DB_PASSWORD', ''),
+            }
         }
+
+class OSEnvConfiguration(Configuration):
+    """Saves and loads configuration from operating system environment variables
+    """
+    def save(self):
+        raise NotImplementedError("Cannot save to OS environment variables")
+
+    def load(self):
+        return {
+            'directories': {
+                'epics_daq_test_folder_path': environ.get('EPICS_DAQ_TEST_FOLDER_PATH', ''),
+            },
+            'measurement_db': {
+                'host': environ.get('MEASUREMENT_DB_HOST', ''),
+                'port': environ.get('MEASUREMENT_DB_PORT', ''),
+                'dbname': environ.get('MEASUREMENT_DB_DBNAME', ''),
+                'username': environ.get('MEASUREMENT_DB_USERNAME', ''),
+                'password': environ.get('MEASUREMENT_DB_PASSWORD', ''),
+            }
+        }
+
+
+class UserDataConfiguration(Configuration):
+    """Uses platformdirs.user_data_dir to store configuration
+    """
+
+    def config_path(self) -> Path:
+        return Path(user_data_dir(appname="ut3_data_browser", appauthor="TAUSystems")) / "config.ini"
+
+
+    def save(self, form_data: dict):
+        cp = ConfigParser()
+        cp['directories'] = {
+            'epics_daq_test_folder_path': form_data['epics_daq_test_folder_path'],
+        }
+
+        cp['Database'] = {
+            'measurement_db_host': form_data['measurement_db_host'],
+            'measurement_db_port': form_data['measurement_db_port'],
+            'measurement_db_dbname': form_data['measurement_db_dbname'],
+            'measurement_db_username': form_data['measurement_db_username'],
+            'measurement_db_password': form_data['measurement_db_password'],
+        }
+
+        self.config_path().parent.mkdir(parents=True, exist_ok=True)
+
+        with self.config_path().open('w') as f:
+            cp.write(f)
+
+    def load(self) -> dict[str, dict[str, str]]:
+        cp = ConfigParser()
+
+        try:
+            if not self.config_path().exists():
+                raise FileNotFoundError("Config file does not exist.")
+
+            cp.read(self.config_path())
+
+            if 'directories' not in cp.sections():
+                raise ValueError("directories not found in config")
+
+            if 'measurement_db' not in cp.sections():
+                raise ValueError("measurement_db not found in config")
+
+            return {section_name: dict(cp.items(section_name)) for section_name in cp.sections()}
+
+        except:
+            return {'directories': {
+                        'epics_daq_test_folder_path': "",
+                    }, 
+                    'measurement_db': {
+                        'host': "",
+                        'port': "",
+                        'dbname': "",
+                        'username': "",
+                        'password': "",
+                    }
+            }

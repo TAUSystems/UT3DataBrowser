@@ -9,7 +9,7 @@ from flask import render_template, redirect
 
 from datetime import datetime
 
-from ..logic.scans import get_scans, get_scan
+from ..logic.scans import get_scans, get_scan, get_scan_results_for_scan_page
 from .forms import SettingsForm
 from ..logic.settings import save_config, load_config
 
