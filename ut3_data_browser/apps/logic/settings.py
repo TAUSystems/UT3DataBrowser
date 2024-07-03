@@ -36,6 +36,7 @@ class DotenvConfiguration(Configuration):
                 'epics_daq_test_folder_path': env.get('EPICS_DAQ_TEST_FOLDER_PATH', ''),
             },
             'measurement_db': {
+                'driver': env.get('MEASUREMENT_DB_SQLALCHEMY_DRIVER', ''),
                 'host': env.get('MEASUREMENT_DB_HOST', ''),
                 'port': env.get('MEASUREMENT_DB_PORT', ''),
                 'dbname': env.get('MEASUREMENT_DB_DBNAME', ''),
@@ -56,6 +57,7 @@ class OSEnvConfiguration(Configuration):
                 'epics_daq_test_folder_path': environ.get('EPICS_DAQ_TEST_FOLDER_PATH', ''),
             },
             'measurement_db': {
+                'driver': environ.get('MEASUREMENT_DB_SQLALCHEMY_DRIVER', 'mariadb+pymysql'),
                 'host': environ.get('MEASUREMENT_DB_HOST', ''),
                 'port': environ.get('MEASUREMENT_DB_PORT', ''),
                 'dbname': environ.get('MEASUREMENT_DB_DBNAME', ''),
@@ -80,6 +82,7 @@ class UserDataConfiguration(Configuration):
         }
 
         cp['Database'] = {
+            'measurement_db_driver': form_data['measurement_db_driver'],
             'measurement_db_host': form_data['measurement_db_host'],
             'measurement_db_port': form_data['measurement_db_port'],
             'measurement_db_dbname': form_data['measurement_db_dbname'],
@@ -114,6 +117,7 @@ class UserDataConfiguration(Configuration):
                         'epics_daq_test_folder_path': "",
                     }, 
                     'measurement_db': {
+                        'driver': "mariadb+pymysql",
                         'host': "",
                         'port': "",
                         'dbname': "",

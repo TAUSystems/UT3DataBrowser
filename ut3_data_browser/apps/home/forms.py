@@ -9,6 +9,10 @@ class SettingsForm(FlaskForm):
         description="Folder containing data and analysis folders for the EPICS-DAQ-Test experiment", 
     )
     
+    measurement_db_driver = StringField("Measurement DB SQLAlchemy driver",
+        description="SQLAlchemy driver to connect to the measurement database server",
+    )
+
     measurement_db_host = StringField("Measurement DB host",
         description="IP address or hostname of the measurement database server",
     )
