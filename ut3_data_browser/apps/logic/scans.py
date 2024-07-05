@@ -86,7 +86,7 @@ def get_scan_measurements(scan_timestamp: datetime = None) -> dict[datetime: dic
 
 class ScanResults(NamedTuple):
     shot_timestamp: datetime
-    pointing_and_spectrum_path: Path | None
+    pointing_and_spectrum_path: str | None
 
     horizontal_position: float
     vertical_position: float
@@ -104,10 +104,9 @@ def get_scan_results_for_scan_page(scan_timestamp: datetime) -> list[ScanResults
     for shot_timestamp, measurements in scan_measurements.items():
         scan_results.append(ScanResults(
             shot_timestamp = shot_timestamp,
-            pointing_and_spectrum_path = ((Path(epics_daq_test_folder_path) / 'data' / 
-                                           f"burst-{measurements['burst_timestamp']:%Y-%m-%dT%H-%M-%S-%fZ}" / 
-                                           f"shot-{shot_timestamp:%Y-%m-%dT%H-%M-%S-%fZ}" /
-                                           "E-Spectrometer-LowEnergy" / 
+            pointing_and_spectrum_path = ((f"burst-{measurements['burst_timestamp']:%Y-%m-%dT%H-%M-%S-%fZ}/" 
+                                           f"shot-{shot_timestamp:%Y-%m-%dT%H-%M-%S-%fZ}/"
+                                           "E-Spectrometer-LowEnergy/" 
                                            "pointing_and_spectrum.png"
                                           ) if epics_daq_test_folder_path else None),
             horizontal_position = measurements.get('Plasma:Position:HorizontalX:Absolute_GET', float('nan')),

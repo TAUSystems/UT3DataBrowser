@@ -51,8 +51,8 @@
             <table class="table align-items-center table-flush">
               <thead class="thead-light">
                 <tr>
-                  <th scope="col" class="sort" data-sort="name">Session / Scan</th>
-                  <th scope="col" class="sort" data-sort="description">Title</th>
+                  <th scope="col" class="sort" data-sort="name">Position</th>
+                  <th scope="col" class="sort" data-sort="description">Pointing/Spectrum image</th>
                 </tr>
               </thead>
               <tbody class="list">
@@ -64,7 +64,7 @@
                     Longitudinal position = {{ scan_result.longitudinal_position }}<br/>
                   </td>
                   <td>
-                    <img src="{{ scan_result.pointing_and_spectrum_path }}" alt="Pointing and spectrum" width="100%"/><br/>
+                    <img src="{{ url_for('home_blueprint.image', image_path= scan_result.pointing_and_spectrum_path) }}" alt="Pointing and spectrum" width="100%"/><br/>
                   </td>
                 </tr>
                 {% endfor %}

@@ -5,9 +5,11 @@ Copyright (c) 2019 - present AppSeed.us
 from __future__ import annotations
 
 from apps.home import blueprint
-from flask import render_template, redirect
+from flask import render_template, redirect, Response
 
 from datetime import datetime
+from pathlib import Path
+import re
 
 from ..logic.scans import get_scans, get_scan, get_scan_results_for_scan_page
 from .forms import SettingsForm
@@ -52,6 +54,20 @@ def settings():
 
         return render_template("home/settings.html", form=form)
 
+
+@blueprint.route('/image/<path:image_path>')
+def image(image_path: str):
+    config = load_config()
+
+    if not re.match(r'^burst-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{6}Z/shot-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{6}Z/[\w\-]+/[\w_\.]+$', image_path):
+        raise ValueError(f"Invalid image path {image_path}")
+
+    local_image_path = Path(config['directories']['epics_daq_test_folder_path']) / 'data' / image_path
+
+    if local_image_path.suffix == '.png':
+        return Response(local_image_path.read_bytes(), mimetype='image/png')
+    else:
+        raise NotImplementedError(f"Image type {local_image_path.suffix} not supported")
 
 @blueprint.app_errorhandler(404) 
 def not_found(e): 
