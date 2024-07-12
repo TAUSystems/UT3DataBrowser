@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple, Optional
 from datetime import datetime
 from datetime import timezone as tz
 
@@ -45,12 +45,12 @@ def get_scan(timestamp: datetime) -> Scan:
         return row_to_scan(row)
 
 
-def get_scan_measurements(scan_timestamp: datetime = None) -> dict[datetime: dict[str, float]]:
+def get_scan_measurements(scan_timestamp: datetime = None) -> dict[datetime, dict[str, float]]:
     """
     
     Returns
     -------
-    dict[datetime: dict[str, float]
+    dict[datetime, dict[str, float]]
         measurement values organized in a dict of dicts. Outer dict keys are 
         shot timestamp, inner dict keys are variables names
     """
@@ -84,34 +84,53 @@ def get_scan_measurements(scan_timestamp: datetime = None) -> dict[datetime: dic
 
 
 
-class ScanResults(NamedTuple):
+class ShotData(NamedTuple):
     shot_timestamp: datetime
     pointing_and_spectrum_path: str | None
 
-    horizontal_position: float
-    vertical_position: float
-    longitudinal_position: float
+    measurements: dict[str, float]
 
 
-def get_scan_results_for_scan_page(scan_timestamp: datetime) -> list[ScanResults]:
+def get_scan_results_for_scan_page(scan_timestamp: datetime, variable_names: Optional[list[str]] = None) -> list[ShotData]:
+
+    if variable_names is None:
+        # TODO: get variable names from configuration
+        variable_names = ['Plasma:Position:HorizontalX:Absolute_GET', 
+                          'Plasma:Position:VerticalY:Absolute_GET', 
+                          'Plasma:Position:LongitudinalZ:Absolute_GET', 
+                          
+                          'E:Stats:Spectrometer:Pointing:CentroidX_RBV',
+                          'E:Stats:Spectrometer:Pointing:CentroidY_RBV',
+                          
+                          'E:Spectrometer:LowEnergy:mean_energy_MeV',
+                          'E:Spectrometer:LowEnergy:std_energy_MeV',
+                          'E:Spectrometer:LowEnergy:dE_over_E',
+                         ]
 
     config = load_config()
     epics_daq_test_folder_path: str | None = config.get('directories', {}).get('epics_daq_test_folder_path', None)
 
     scan_measurements = get_scan_measurements(scan_timestamp)
 
-    scan_results = []
-    for shot_timestamp, measurements in scan_measurements.items():
-        scan_results.append(ScanResults(
+    scan_results: list[ShotData] = []
+    for shot_timestamp, shot_measurements in scan_measurements.items():
+        
+        pointing_and_spectrum_path = ((f"burst-{shot_measurements['burst_timestamp']:%Y-%m-%dT%H-%M-%S-%fZ}/" 
+                                       f"shot-{shot_timestamp:%Y-%m-%dT%H-%M-%S-%fZ}/"
+                                       "E-Spectrometer-LowEnergy/" 
+                                       "pointing_and_spectrum.png"
+                                      ) if epics_daq_test_folder_path else None
+                                     )
+        
+        # TODO: get variable display name
+        measurements = {variable_name: shot_measurements.get(variable_name, float('nan'))
+                        for variable_name in variable_names
+                       }
+
+        scan_results.append(ShotData(
             shot_timestamp = shot_timestamp,
-            pointing_and_spectrum_path = ((f"burst-{measurements['burst_timestamp']:%Y-%m-%dT%H-%M-%S-%fZ}/" 
-                                           f"shot-{shot_timestamp:%Y-%m-%dT%H-%M-%S-%fZ}/"
-                                           "E-Spectrometer-LowEnergy/" 
-                                           "pointing_and_spectrum.png"
-                                          ) if epics_daq_test_folder_path else None),
-            horizontal_position = measurements.get('Plasma:Position:HorizontalX:Absolute_GET', float('nan')),
-            vertical_position = measurements.get('Plasma:Position:VerticalY:Absolute_GET', float('nan')),
-            longitudinal_position = measurements.get('Plasma:Position:LongitudinalZ:Absolute_GET', float('nan')),
+            pointing_and_spectrum_path = pointing_and_spectrum_path,
+            measurements = measurements,
         ))
 
     return scan_results
