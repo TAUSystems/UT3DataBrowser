@@ -59,12 +59,12 @@
                 {% for shot_data in scan_results %}
                 <tr>
                   <td scope="row">
-                    {% for variable_name, value in shot_data.items() %}
+                    {% for variable_name, value in shot_data.measurements.items() %}
                       {{ variable_name }} = {{ value }}<br/>
                     {% endfor %}
                   </td>
                   <td>
-                    <img src="{{ url_for('home_blueprint.image', image_path= scan_result.pointing_and_spectrum_path) }}" alt="Pointing and spectrum" width="100%"/><br/>
+                    <img src="{{ url_for('home_blueprint.image', image_path= shot_data.pointing_and_spectrum_path) }}" alt="Pointing and spectrum" width="100%"/><br/>
                   </td>
                 </tr>
                 {% endfor %}
