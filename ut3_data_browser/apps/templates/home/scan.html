@@ -56,12 +56,12 @@
                 </tr>
               </thead>
               <tbody class="list">
-                {% for scan_result in scan_results %}
+                {% for shot_data in scan_results %}
                 <tr>
                   <td scope="row">
-                    Horizontal position = {{ scan_result.horizontal_position }}<br/>
-                    Vertical position = {{ scan_result.vertical_position }}<br/>
-                    Longitudinal position = {{ scan_result.longitudinal_position }}<br/>
+                    {% for variable_name, value in shot_data.items() %}
+                      {{ variable_name }} = {{ value }}<br/>
+                    {% endfor %}
                   </td>
                   <td>
                     <img src="{{ url_for('home_blueprint.image', image_path= scan_result.pointing_and_spectrum_path) }}" alt="Pointing and spectrum" width="100%"/><br/>
