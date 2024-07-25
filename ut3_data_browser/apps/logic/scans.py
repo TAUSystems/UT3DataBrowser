@@ -98,13 +98,15 @@ def get_scan_results_for_scan_page(scan_timestamp: datetime, variable_names: Opt
         variable_names = ['Plasma:Position:HorizontalX:Absolute_GET', 
                           'Plasma:Position:VerticalY:Absolute_GET', 
                           'Plasma:Position:LongitudinalZ:Absolute_GET', 
-                          
-                          'E:Stats:Spectrometer:Pointing:CentroidX_RBV',
-                          'E:Stats:Spectrometer:Pointing:CentroidY_RBV',
-                          
+
                           'E:Spectrometer:LowEnergy:mean_energy_MeV',
                           'E:Spectrometer:LowEnergy:std_energy_MeV',
                           'E:Spectrometer:LowEnergy:dE_over_E',
+
+                          'E:Spectrometer:LowEnergy:pointing_deviation_x',
+                          'E:Spectrometer:LowEnergy:pointing_deviation_y',
+                          'E:Spectrometer:LowEnergy:divergence_x',
+                          'E:Spectrometer:LowEnergy:divergence_y',
                          ]
 
     config = load_config()
