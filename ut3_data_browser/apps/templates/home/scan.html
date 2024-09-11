@@ -48,28 +48,41 @@
         <div class="card card-stats">
           <!-- Scan images -->
           <div class="card-body">
-            <table class="table align-items-center table-flush">
-              <thead class="thead-light">
-                <tr>
-                  <th scope="col" class="sort" data-sort="name">Position</th>
-                  <th scope="col" class="sort" data-sort="description">Pointing/Spectrum image</th>
-                </tr>
-              </thead>
-              <tbody class="list">
-                {% for shot_data in scan_results %}
-                <tr>
-                  <td scope="row">
-                    {% for variable_name, value in shot_data.measurements.items() %}
-                      {{ variable_name }} = {{ value }}<br/>
-                    {% endfor %}
-                  </td>
-                  <td>
-                    <img src="{{ url_for('home_blueprint.image', image_path= shot_data.pointing_and_spectrum_path) }}" alt="Pointing and spectrum" width="100%"/><br/>
-                  </td>
-                </tr>
+            {% for burst in scan.bursts %}
+            <div id="burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}" class="burst">
+              <button data-toggle="collapse" data-target="#burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}-shots">
+                <h5>Burst {{ burst.seq }}</h5>
+                {% for variable_name, value in burst.averages.items() %}
+                  {{ variable_name }} = {{ value }}<br/>
                 {% endfor %}
-              </tbody>
-            </table>
+              </button>
+
+              <div id="burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}-shots" class="burst-shots">
+                <table class="table align-items-center table-flush">
+                  <thead class="thead-light">
+                    <tr>
+                      <th scope="col" class="sort" data-sort="name">Measurements</th>
+                      <th scope="col" class="sort" data-sort="description">Pointing/Spectrum image</th>
+                    </tr>
+                  </thead>
+                  <tbody class="list">
+                    {% for shot_data in burst.shots %}
+                    <tr>
+                      <td scope="row">
+                        {% for variable_name, value in shot.measurements.items() %}
+                          {{ variable_name }} = {{ value }}<br/>
+                        {% endfor %}
+                      </td>
+                      <td>
+                        <img src="{{ url_for('home_blueprint.image', image_path= shot_data.pointing_and_spectrum_path) }}" alt="Pointing and spectrum" width="100%"/><br/>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {% endfor %}
 
           </div>
         </div>
