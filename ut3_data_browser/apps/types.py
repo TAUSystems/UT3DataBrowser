@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TypedDict
+from typing import NewType, TypedDict
 
 class DirectoriesConfigurationDict(TypedDict):
     epics_daq_test_folder_path: str
@@ -16,3 +16,5 @@ class MeasurementDBConfigurationDict(TypedDict):
 class ConfigurationDict(TypedDict):
     directories: DirectoriesConfigurationDict
     measurement_db: MeasurementDBConfigurationDict
+
+VariableName = NewType('VariableName', str)
