@@ -144,7 +144,7 @@ def organize_scan_measurements(scan_measurements: list[MeasurementRow]) -> list[
             ) for shot_timestamp, measurement_rows_in_shot in shots_in_burst.items()
         ]
 
-        first_measurement_row_in_burst: MeasurementRow = shots_in_burst.values()[0][0]
+        first_measurement_row_in_burst = next(iter(shots_in_burst.values()))[0]
         bursts.append(BurstData(
             timestamp = burst_timestamp.replace(tzinfo=tz.utc),
             seq = first_measurement_row_in_burst.burst_seq,
