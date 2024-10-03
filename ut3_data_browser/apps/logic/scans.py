@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from operator import attrgetter
 from pathlib import Path
-from typing import TYPE_CHECKING, NamedTuple, NewType, Optional
+from typing import TYPE_CHECKING, NamedTuple, NewType, Optional, Protocol
 from datetime import datetime
 from datetime import timezone as tz
 
@@ -48,7 +48,16 @@ def get_scan(timestamp: datetime) -> Scan:
         return row_to_scan(row)
 
 
-def get_scan_measurements_from_db(scan_timestamp: datetime, variable_names: Optional[list[str]] = None) -> list[Row]:
+if TYPE_CHECKING:
+    class MeasurementRow(Row, Protocol):
+        variable_name: str
+        burst_timestamp: datetime
+        burst_seq: int
+        shot_timestamp: datetime
+        shot_seq: int
+        value: float
+
+def get_scan_measurements_from_db(scan_timestamp: datetime, variable_names: Optional[list[str]] = None) -> list[MeasurementRow]:
     """
     
     Returns
@@ -101,7 +110,7 @@ class ScanData(NamedTuple):
     timestamp: datetime
     bursts: list[BurstData]
 
-def organize_scan_measurements(scan_measurements: list[Row]) -> list[BurstData]:
+def organize_scan_measurements(scan_measurements: list[MeasurementRow]) -> list[BurstData]:
     """ Organizes measurements obtained with get_scan_measurements_from_db into 
         a list of BurstData objects.
 
@@ -109,35 +118,43 @@ def organize_scan_measurements(scan_measurements: list[Row]) -> list[BurstData]:
 
     """
 
-    bursts = {}
+    # first organize measurements into a dict of dicts with burst_timestamp as 
+    # the first key and shot_timestamp as the second key
+    measurements_by_burst_and_shot: dict[datetime, dict[datetime, list[MeasurementRow]]] = {}
     for row in scan_measurements:
 
-        if row.burst_timestamp not in bursts:
-            bursts[row.burst_timestamp] = BurstData(
-                timestamp = row.burst_timestamp.replace(tzinfo=tz.utc),
-                seq = row.burst_seq,
-                shots = [],
-                averages = {},
-            )
+        if row.burst_timestamp not in measurements_by_burst_and_shot:
+            measurements_by_burst_and_shot[row.burst_timestamp] = {}
+        
+        if row.shot_timestamp not in measurements_by_burst_and_shot[row.burst_timestamp]:
+            measurements_by_burst_and_shot[row.burst_timestamp][row.shot_timestamp] = []
+        
+        measurements_by_burst_and_shot[row.burst_timestamp][row.shot_timestamp].append(row)
 
-        # temporary dict to organize shots before making a list of shots
-        bursts[row.burst_timestamp].shots_dict = {}
+    # then convert the Row objects into ShotData objects and BurstData objects
+    bursts: list[BurstData] = []
+    for burst_timestamp, shots_in_burst in measurements_by_burst_and_shot.items():
 
-        if row.shot_timestamp not in bursts[row.burst_timestamp].shots_dict:
-            bursts[row.burst_timestamp].shots_dict[row.shot_timestamp] = ShotData(
-                timestamp = row.shot_timestamp.replace(tzinfo=tz.utc),
-                seq = row.shot_seq,
+        shots: list[ShotData] = [
+            ShotData(
+                timestamp = shot_timestamp.replace(tzinfo=tz.utc),
+                seq = measurement_rows_in_shot[0].shot_seq,
+                measurements = {measurement_row.variable_name: measurement_row.value for measurement_row in measurement_rows_in_shot},
                 pointing_and_spectrum_path = None,
-                measurements = {},
-            )
+            ) for shot_timestamp, measurement_rows_in_shot in shots_in_burst.items()
+        ]
 
-        bursts[row.burst_timestamp].shots_dict[row.shot_timestamp].measurements[row.variable_name] = row.value
+        first_measurement_row_in_burst: MeasurementRow = shots_in_burst.values()[0][0]
+        bursts.append(BurstData(
+            timestamp = burst_timestamp.replace(tzinfo=tz.utc),
+            seq = first_measurement_row_in_burst.burst_seq,
+            shots = sorted(shots, key=attrgetter('timestamp')),
+            averages = {},
+        ))
 
-    for burst_timestamp, burst in bursts.items():
-        burst.shots = sorted(burst.shots_dict.values(), key=attrgetter('timestamp'))
-        del burst.shots_dict
+    bursts = sorted(bursts, key=attrgetter('timestamp'))
 
-    return sorted(bursts.values(), key=attrgetter('timestamp'))
+    return bursts 
 
 def calculate_burst_averages(burst: BurstData) -> dict[VariableName, float]:
     """ Calculates the average of each variable across all shots in a burst
