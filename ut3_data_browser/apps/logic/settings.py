@@ -59,7 +59,7 @@ class OSEnvConfiguration(Configuration):
                 'epics_daq_test_folder_path': environ.get('EPICS_DAQ_TEST_FOLDER_PATH', ''),
             },
             'measurement_db': {
-                'driver': environ.get('MEASUREMENT_DB_SQLALCHEMY_DRIVER', 'mariadb+pymysql'),
+                'driver': environ.get('MEASUREMENT_DB_SQLALCHEMY_DRIVER', 'postgresql+psycopg2'),
                 'host': environ.get('MEASUREMENT_DB_HOST', ''),
                 'port': environ.get('MEASUREMENT_DB_PORT', ''),
                 'dbname': environ.get('MEASUREMENT_DB_DBNAME', ''),
