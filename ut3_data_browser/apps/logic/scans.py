@@ -139,7 +139,6 @@ def organize_scan_measurements(scan_measurements: list[MeasurementRow]) -> list[
                 timestamp = shot_timestamp.replace(tzinfo=tz.utc),
                 seq = measurement_rows_in_shot[0].shot_seq,
                 measurements = {measurement_row.variable_name: measurement_row.value for measurement_row in measurement_rows_in_shot},
-                pointing_and_spectrum_path = None,
             ) for shot_timestamp, measurement_rows_in_shot in shots_in_burst.items()
         ]
 
