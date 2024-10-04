@@ -98,7 +98,6 @@ class ShotData(NamedTuple):
     timestamp: datetime
     seq: int
     measurements: dict[str, float]
-    pointing_and_spectrum_path: str | None
 
 class BurstData(NamedTuple):
     timestamp: datetime
@@ -166,12 +165,9 @@ def calculate_burst_averages(burst: BurstData) -> dict[VariableName, float]:
                 measurements[variable_name] = []
             measurements[variable_name].append(value)
 
-    averages = {variable_name: sum(values) / len(values) 
-                for variable_name, values in measurements.items()
-               }
-
-    return averages
-
+    return {variable_name: sum(values) / len(values) 
+            for variable_name, values in measurements.items()
+           }
 
 
 def get_scan_results_for_scan_page(scan_timestamp: datetime, variable_names: Optional[list[str]] = None) -> ScanData:

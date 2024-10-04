@@ -55,19 +55,55 @@ def settings():
         return render_template("home/settings.html", form=form)
 
 
-@blueprint.route('/image/<path:image_path>')
-def image(image_path: str):
+@blueprint.route('/image')
+def image(burst_timestamp: str = None, shot_timestamp: str = None, device: str = None, subject: str = None):
+    """Get image data to be used in <img src="..."> tag
+
+    Parameters
+    ----------
+    burst_timestamp : str
+        in format %Y-%m-%dT%H:%M:%S.%f
+    shot_timestamp : str
+        in format %Y-%m-%dT%H:%M:%S.%f
+    device : str
+        device name, as it is in the file system (so not colons but hyphens, e.g. 
+        E-Spectrometer)
+    subject : str
+        file name of the image, including extension (e.g. pointing_and_spectrum.png)
+
+    """
     config = load_config()
 
-    if not re.match(r'^burst-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{6}Z/shot-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{6}Z/[\w\-]+/[\w_\.]+$', image_path):
-        raise ValueError(f"Invalid image path {image_path}")
+    burst_timestamp_dt = datetime.strptime(burst_timestamp, '%Y-%m-%dT%H:%M:%S.%f')
+    shot_timestamp_dt = datetime.strptime(shot_timestamp, '%Y-%m-%dT%H:%M:%S.%f')
 
-    local_image_path = Path(config['directories']['epics_daq_test_folder_path']) / 'data' / image_path
+    if burst_timestamp_dt is None or shot_timestamp_dt is None:
+        raise ValueError("burst_timestamp and shot_timestamp must be provided")
+    
+    if device is None or subject is None:
+        raise ValueError("device and subject must be provided")
+    
+    ALLOWED_IMAGES = [
+        ('E-Spectrometer', 'pointing_and_spectrum.png'),
+    ]
 
-    if local_image_path.suffix == '.png':
+    if (device, subject) not in ALLOWED_IMAGES:
+        raise ValueError(f"device {device} and subject {subject} not supported")
+
+    file_path_relative_to_data_folder = Path(
+        f"burst-{burst_timestamp_dt:%Y-%m-%dT%H-%M-%S-%fZ}",
+        f"shot-{shot_timestamp_dt:%Y-%m-%dT%H-%M-%S-%fZ}",
+        device,
+        subject
+    )
+
+    local_image_path = Path(config['directories']['epics_daq_test_folder_path']) / 'data' / file_path_relative_to_data_folder
+
+    if local_image_path.exists():
         return Response(local_image_path.read_bytes(), mimetype='image/png')
     else:
-        raise NotImplementedError(f"Image type {local_image_path.suffix} not supported")
+        raise ValueError(f"Image {file_path_relative_to_data_folder} not found")
+
 
 @blueprint.app_errorhandler(404) 
 def not_found(e): 
