@@ -198,14 +198,6 @@ def get_scan_results_for_scan_page(scan_timestamp: datetime, variable_names: Opt
     )
 
     for burst in scan_data.bursts:
-        burst.averages = calculate_burst_averages(burst)
-
-        for shot in burst.shots:
-            shot.pointing_and_spectrum_path = ((f"burst-{burst.timestamp:%Y-%m-%dT%H-%M-%S-%fZ}/" 
-                                                f"shot-{shot.timestamp:%Y-%m-%dT%H-%M-%S-%fZ}/"
-                                                "E-Spectrometer-LowEnergy/" 
-                                                "pointing_and_spectrum.png"
-                                               ) if epics_daq_test_folder_path else None
-                                              )
+        burst.averages.update(calculate_burst_averages(burst))
 
     return scan_data
