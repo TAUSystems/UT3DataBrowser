@@ -5,7 +5,7 @@ Copyright (c) 2019 - present AppSeed.us
 from __future__ import annotations
 
 from apps.home import blueprint
-from flask import render_template, redirect, Response
+from flask import render_template, redirect, Response, request
 
 from datetime import datetime
 from pathlib import Path
@@ -56,10 +56,10 @@ def settings():
 
 
 @blueprint.route('/image')
-def image(burst_timestamp: str = None, shot_timestamp: str = None, device: str = None, subject: str = None):
-    """Get image data to be used in <img src="..."> tag
+def image():
+    """Get image data to be used in image tags
 
-    Parameters
+    Query Parameters
     ----------
     burst_timestamp : str
         in format %Y-%m-%dT%H:%M:%S.%f
@@ -72,17 +72,24 @@ def image(burst_timestamp: str = None, shot_timestamp: str = None, device: str =
         file name of the image, including extension (e.g. pointing_and_spectrum.png)
 
     """
-    config = load_config()
+    burst_timestamp: str = request.args.get('burst_timestamp')
+    shot_timestamp: str = request.args.get('shot_timestamp')
+    device: str = request.args.get('device')
+    subject: str = request.args.get('subject')
 
-    burst_timestamp_dt = datetime.strptime(burst_timestamp, '%Y-%m-%dT%H:%M:%S.%f')
-    shot_timestamp_dt = datetime.strptime(shot_timestamp, '%Y-%m-%dT%H:%M:%S.%f')
-
-    if burst_timestamp_dt is None or shot_timestamp_dt is None:
+    if burst_timestamp is None or shot_timestamp is None:
         raise ValueError("burst_timestamp and shot_timestamp must be provided")
-    
+
     if device is None or subject is None:
         raise ValueError("device and subject must be provided")
-    
+
+    try: 
+        burst_timestamp_dt = datetime.strptime(burst_timestamp, '%Y-%m-%dT%H:%M:%S.%f')
+        shot_timestamp_dt = datetime.strptime(shot_timestamp, '%Y-%m-%dT%H:%M:%S.%f')
+    except ValueError:
+        raise ValueError("burst_timestamp and shot_timestamp must be in format %Y-%m-%dT%H:%M:%S.%f")
+
+
     ALLOWED_IMAGES = [
         ('E-Spectrometer', 'pointing_and_spectrum.png'),
     ]
@@ -96,7 +103,8 @@ def image(burst_timestamp: str = None, shot_timestamp: str = None, device: str =
         device,
         subject
     )
-
+    
+    config = load_config()
     local_image_path = Path(config['directories']['epics_daq_test_folder_path']) / 'data' / file_path_relative_to_data_folder
 
     if local_image_path.exists():
