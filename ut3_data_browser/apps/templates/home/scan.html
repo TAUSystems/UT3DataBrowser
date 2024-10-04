@@ -50,14 +50,14 @@
           <div class="card-body">
             {% for burst in scan_results.bursts %}
             <div id="burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}" class="burst">
-              <button data-toggle="collapse" data-target="#burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}-shots">
+              <button data-toggle="collapse" data-target="#burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}-shots" aria-expanded="false">
                 <h5>Burst {{ burst.seq }}</h5>
                 {% for variable_name, value in burst.averages.items() %}
                   {{ variable_name }} = {{ value }}<br/>
                 {% endfor %}
               </button>
 
-              <div id="burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}-shots" class="burst-shots">
+              <div id="burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}-shots" class="collapse burst-shots">
                 <table class="table align-items-center table-flush">
                   <thead class="thead-light">
                     <tr>
