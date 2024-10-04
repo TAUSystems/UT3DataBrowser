@@ -48,7 +48,7 @@
         <div class="card card-stats">
           <!-- Scan images -->
           <div class="card-body">
-            {% for burst in scan.bursts %}
+            {% for burst in scan_results.bursts %}
             <div id="burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}" class="burst">
               <button data-toggle="collapse" data-target="#burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}-shots">
                 <h5>Burst {{ burst.seq }}</h5>
@@ -69,7 +69,7 @@
                     {% for shot_data in burst.shots %}
                     <tr>
                       <td scope="row">
-                        {% for variable_name, value in shot.measurements.items() %}
+                        {% for variable_name, value in shot_data.measurements.items() %}
                           {{ variable_name }} = {{ value }}<br/>
                         {% endfor %}
                       </td>
