@@ -3,15 +3,16 @@
 Copyright (c) 2019 - present AppSeed.us
 """
 from __future__ import annotations
+from io import BytesIO
 
 from apps.home import blueprint
 from flask import render_template, redirect, Response, request
 
 from datetime import datetime
 from pathlib import Path
-import re
 
 from ..logic.scans import get_scans, get_scan, get_scan_results_for_scan_page
+from ..logic.plots import plot_pointing_and_spectrum
 from .forms import SettingsForm
 from ..logic.settings import save_config, load_config
 
@@ -112,6 +113,37 @@ def image():
     else:
         raise ValueError(f"Image {file_path_relative_to_data_folder} not found")
 
+
+@blueprint.route('/pointing_and_spectrum')
+def pointing_and_spectrum():
+    """ Generate pointing and spectrum image 
+    
+    Query Parameters
+    ----------
+    burst_timestamp : str
+        in format %Y-%m-%dT%H:%M:%S.%f
+    shot_timestamp : str
+        in format %Y-%m-%dT%H:%M:%S.%f
+
+    """
+
+    burst_timestamp: str = request.args.get('burst_timestamp')
+    shot_timestamp: str = request.args.get('shot_timestamp')
+
+    if burst_timestamp is None or shot_timestamp is None:
+        raise ValueError("burst_timestamp and shot_timestamp must be provided")
+
+    try: 
+        burst_timestamp_dt = datetime.strptime(burst_timestamp, '%Y-%m-%dT%H:%M:%S.%f')
+        shot_timestamp_dt = datetime.strptime(shot_timestamp, '%Y-%m-%dT%H:%M:%S.%f')
+    except ValueError:
+        raise ValueError("burst_timestamp and shot_timestamp must be in format %Y-%m-%dT%H:%M:%S.%f")
+
+    figure = plot_pointing_and_spectrum(burst_timestamp_dt, shot_timestamp_dt)
+
+    with BytesIO() as pointing_and_spectrum_png_bytes:
+        figure.savefig(pointing_and_spectrum_png_bytes, format='png')
+        return Response(pointing_and_spectrum_png_bytes.getvalue(), mimetype='image/png')
 
 @blueprint.app_errorhandler(404) 
 def not_found(e): 
