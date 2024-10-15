@@ -1,16 +1,18 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import TYPE_CHECKING, NamedTuple, Optional
+from operator import attrgetter
+from typing import TYPE_CHECKING, NamedTuple, Optional, Protocol
 from datetime import datetime
 from datetime import timezone as tz
 
 from sqlalchemy import select
+
 if TYPE_CHECKING:
     from sqlalchemy import Row
 
 from .utils.measurement_db import get_sqlalchemy_engine, get_tables
 from .settings import load_config
+from ..types import VariableName
 
 sqlalchemy_engine = get_sqlalchemy_engine()
 tables = get_tables()
@@ -22,7 +24,23 @@ class Scan(NamedTuple):
     seq: int
     notes: str
 
-def row_to_scan(row: Row) -> Scan:
+if TYPE_CHECKING:
+    class MeasurementRow(Row, Protocol):
+        variable_name: str
+        burst_timestamp: datetime
+        burst_seq: int
+        shot_timestamp: datetime
+        shot_seq: int
+        value: float
+
+    class ScanRow(Row, Protocol):
+        timestamp: datetime
+        title: str
+        session_timestamp: datetime
+        seq: int
+        notes: str
+
+def row_to_scan(row: ScanRow) -> Scan:
     return Scan(
                 timestamp = row.timestamp.replace(tzinfo=tz.utc),
                 title = row.title,
@@ -45,53 +63,120 @@ def get_scan(timestamp: datetime) -> Scan:
         return row_to_scan(row)
 
 
-def get_scan_measurements(scan_timestamp: datetime = None) -> dict[datetime, dict[str, float]]:
+
+def get_scan_measurements_from_db(scan_timestamp: datetime, variable_names: Optional[list[str]] = None) -> list[MeasurementRow]:
     """
     
     Returns
     -------
-    dict[datetime, dict[str, float]]
-        measurement values organized in a dict of dicts. Outer dict keys are 
-        shot timestamp, inner dict keys are variables names
+    list[Row]
+        List of rows with the following attributes:
+        - variable_name
+        - burst_timestamp
+        - burst_seq
+        - shot_timestamp
+        - shot_seq
+        - value
     """
     select_stmt = (
         select(tables['variable'].c.name.label('variable_name'), 
                tables['burst'].c.timestamp.label('burst_timestamp'),
+               tables['burst'].c.seq.label('burst_seq'),
                tables['shot'].c.timestamp.label('shot_timestamp'),
+               tables['shot'].c.seq.label('shot_seq'),
                tables['measurement'].c.value
               )
             .join_from(tables['measurement'], tables['shot'])
             .join_from(tables['measurement'], tables['variable'])
             .join_from(tables['shot'], tables['burst'])
             .join_from(tables['burst'], tables['scan'])
+            .where(tables['scan'].c.timestamp == scan_timestamp)
             .order_by(tables['shot'].c.timestamp)
     )
 
-    if scan_timestamp is not None:
-        select_stmt = select_stmt.where(tables['scan'].c.timestamp == scan_timestamp)
-    
-    scan_measurements = {}
+    if variable_names is not None:
+        select_stmt = select_stmt.where(tables['variable'].c.name.in_(variable_names))
 
     with sqlalchemy_engine.connect() as connection:
-        for row in connection.execute(select_stmt):
-
-            if row.shot_timestamp not in scan_measurements:
-                scan_measurements[row.shot_timestamp] = {'burst_timestamp': row.burst_timestamp}
-
-            scan_measurements[row.shot_timestamp][row.variable_name] = row.value
-
-    return scan_measurements
-
+        return connection.execute(select_stmt).fetchall()
 
 
 class ShotData(NamedTuple):
-    shot_timestamp: datetime
-    pointing_and_spectrum_path: str | None
-
+    timestamp: datetime
+    seq: int
     measurements: dict[str, float]
 
+class BurstData(NamedTuple):
+    timestamp: datetime
+    seq: int
+    shots: list[ShotData]
+    averages: dict[VariableName, float]
 
-def get_scan_results_for_scan_page(scan_timestamp: datetime, variable_names: Optional[list[str]] = None) -> list[ShotData]:
+class ScanData(NamedTuple):
+    timestamp: datetime
+    bursts: list[BurstData]
+
+def organize_scan_measurements(scan_measurements: list[MeasurementRow]) -> list[BurstData]:
+    """ Organizes measurements obtained with get_scan_measurements_from_db into 
+        a list of BurstData objects.
+
+        Does not calculate burst_averages
+
+    """
+
+    # first organize measurements into a dict of dicts with burst_timestamp as 
+    # the first key and shot_timestamp as the second key
+    measurements_by_burst_and_shot: dict[datetime, dict[datetime, list[MeasurementRow]]] = {}
+    for row in scan_measurements:
+
+        if row.burst_timestamp not in measurements_by_burst_and_shot:
+            measurements_by_burst_and_shot[row.burst_timestamp] = {}
+        
+        if row.shot_timestamp not in measurements_by_burst_and_shot[row.burst_timestamp]:
+            measurements_by_burst_and_shot[row.burst_timestamp][row.shot_timestamp] = []
+        
+        measurements_by_burst_and_shot[row.burst_timestamp][row.shot_timestamp].append(row)
+
+    # then convert the Row objects into ShotData objects and BurstData objects
+    bursts: list[BurstData] = []
+    for burst_timestamp, shots_in_burst in measurements_by_burst_and_shot.items():
+
+        shots: list[ShotData] = [
+            ShotData(
+                timestamp = shot_timestamp.replace(tzinfo=tz.utc),
+                seq = measurement_rows_in_shot[0].shot_seq,
+                measurements = {measurement_row.variable_name: measurement_row.value for measurement_row in measurement_rows_in_shot},
+            ) for shot_timestamp, measurement_rows_in_shot in shots_in_burst.items()
+        ]
+
+        first_measurement_row_in_burst = next(iter(shots_in_burst.values()))[0]
+        bursts.append(BurstData(
+            timestamp = burst_timestamp.replace(tzinfo=tz.utc),
+            seq = first_measurement_row_in_burst.burst_seq,
+            shots = sorted(shots, key=attrgetter('timestamp')),
+            averages = {},
+        ))
+
+    bursts = sorted(bursts, key=attrgetter('timestamp'))
+
+    return bursts 
+
+def calculate_burst_averages(burst: BurstData) -> dict[VariableName, float]:
+    """ Calculates the average of each variable across all shots in a burst
+    """
+    measurements: dict[VariableName, list[float]] = {}
+    for shot in burst.shots:
+        for variable_name, value in shot.measurements.items():
+            if variable_name not in measurements:
+                measurements[variable_name] = []
+            measurements[variable_name].append(value)
+
+    return {variable_name: sum(values) / len(values) 
+            for variable_name, values in measurements.items()
+           }
+
+
+def get_scan_results_for_scan_page(scan_timestamp: datetime, variable_names: Optional[list[str]] = None) -> ScanData:
 
     if variable_names is None:
         # TODO: get variable names from configuration
@@ -109,30 +194,13 @@ def get_scan_results_for_scan_page(scan_timestamp: datetime, variable_names: Opt
                           'E:Spectrometer:divergence_y',
                          ]
 
-    config = load_config()
-    epics_daq_test_folder_path: str | None = config.get('directories', {}).get('epics_daq_test_folder_path', None)
+    scan_measurements: list[Row] = get_scan_measurements_from_db(scan_timestamp, variable_names)
+    scan_data = ScanData(
+        timestamp = scan_timestamp,
+        bursts = organize_scan_measurements(scan_measurements)
+    )
 
-    scan_measurements = get_scan_measurements(scan_timestamp)
+    for burst in scan_data.bursts:
+        burst.averages.update(calculate_burst_averages(burst))
 
-    scan_results: list[ShotData] = []
-    for shot_timestamp, shot_measurements in scan_measurements.items():
-        
-        pointing_and_spectrum_path = ((f"burst-{shot_measurements['burst_timestamp']:%Y-%m-%dT%H-%M-%S-%fZ}/" 
-                                       f"shot-{shot_timestamp:%Y-%m-%dT%H-%M-%S-%fZ}/"
-                                       "E-Spectrometer-LowEnergy/" 
-                                       "pointing_and_spectrum.png"
-                                      ) if epics_daq_test_folder_path else None
-                                     )
-        
-        # TODO: get variable display name
-        measurements = {variable_name: shot_measurements.get(variable_name, float('nan'))
-                        for variable_name in variable_names
-                       }
-
-        scan_results.append(ShotData(
-            shot_timestamp = shot_timestamp,
-            pointing_and_spectrum_path = pointing_and_spectrum_path,
-            measurements = measurements,
-        ))
-
-    return scan_results
+    return scan_data
