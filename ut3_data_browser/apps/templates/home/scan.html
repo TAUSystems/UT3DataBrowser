@@ -74,11 +74,10 @@
                         {% endfor %}
                       </td>
                       <td>
-                        <img src="{{ url_for('home_blueprint.image', 
-                                     burst_timestamp=burst.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f'),
-                                     shot_timestamp=shot_data.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f'),
-                                     device='E-Spectrometer',
-                                     subject='pointing_and_spectrum.png')
+                        <img src="{{ url_for('home_blueprint.pointing_and_spectrum', 
+                                       burst_timestamp=burst.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f'),
+                                       shot_timestamp=shot_data.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f')
+                                     )
                                   }}" alt="Pointing and spectrum" width="100%"/><br/>
                       </td>
                     </tr>
