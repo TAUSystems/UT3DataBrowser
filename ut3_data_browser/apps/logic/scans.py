@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from operator import attrgetter
-from pathlib import Path
-from typing import TYPE_CHECKING, NamedTuple, NewType, Optional, Protocol
+from typing import TYPE_CHECKING, NamedTuple, Optional, Protocol
 from datetime import datetime
 from datetime import timezone as tz
 
@@ -25,7 +24,23 @@ class Scan(NamedTuple):
     seq: int
     notes: str
 
-def row_to_scan(row: Row) -> Scan:
+if TYPE_CHECKING:
+    class MeasurementRow(Row, Protocol):
+        variable_name: str
+        burst_timestamp: datetime
+        burst_seq: int
+        shot_timestamp: datetime
+        shot_seq: int
+        value: float
+
+    class ScanRow(Row, Protocol):
+        timestamp: datetime
+        title: str
+        session_timestamp: datetime
+        seq: int
+        notes: str
+
+def row_to_scan(row: ScanRow) -> Scan:
     return Scan(
                 timestamp = row.timestamp.replace(tzinfo=tz.utc),
                 title = row.title,
@@ -48,14 +63,6 @@ def get_scan(timestamp: datetime) -> Scan:
         return row_to_scan(row)
 
 
-if TYPE_CHECKING:
-    class MeasurementRow(Row, Protocol):
-        variable_name: str
-        burst_timestamp: datetime
-        burst_seq: int
-        shot_timestamp: datetime
-        shot_seq: int
-        value: float
 
 def get_scan_measurements_from_db(scan_timestamp: datetime, variable_names: Optional[list[str]] = None) -> list[MeasurementRow]:
     """
@@ -186,9 +193,6 @@ def get_scan_results_for_scan_page(scan_timestamp: datetime, variable_names: Opt
                           'E:Spectrometer:divergence_x',
                           'E:Spectrometer:divergence_y',
                          ]
-
-    config = load_config()
-    epics_daq_test_folder_path: str | None = config.get('directories', {}).get('epics_daq_test_folder_path', None)
 
     scan_measurements: list[Row] = get_scan_measurements_from_db(scan_timestamp, variable_names)
     scan_data = ScanData(
