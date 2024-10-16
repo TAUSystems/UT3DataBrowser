@@ -29,7 +29,7 @@ def load_spectrum_image(tiff_file: Path) -> ImageWithAxes:
 
 def plot_pointing_and_spectrum(burst_timestamp: datetime, shot_timestamp: datetime):
     """ Plot pointing image and spectrum image side by side 
-    
+
     Returns
     -------
     figure : matplotlib Figure
@@ -40,8 +40,8 @@ def plot_pointing_and_spectrum(burst_timestamp: datetime, shot_timestamp: dateti
     e_spectrometer_folder = Path(config['directories']['epics_daq_test_folder_path']) / 'data' / f"burst-{burst_timestamp:%Y-%m-%dT%H-%M-%S-%fZ}" / f"shot-{shot_timestamp:%Y-%m-%dT%H-%M-%S-%fZ}" / 'E-Spectrometer'
 
     pointing_image = load_spectrum_image(e_spectrometer_folder / 'pointing.tiff')
-    low_energy_image = load_spectrum_image(e_spectrometer_folder / 'low_energy.tiff')
-    high_energy_image = load_spectrum_image(e_spectrometer_folder / 'high_energy.tiff')
+    low_energy_image = load_spectrum_image(e_spectrometer_folder / 'low_energy_spectrum.tiff')
+    high_energy_image = load_spectrum_image(e_spectrometer_folder / 'high_energy_spectrum.tiff')
 
     spectrum_lineout = np.loadtxt(e_spectrometer_folder / 'spectrum_AU_per_MeV.dat')
     spectrum_lineout_energy_axis = np.loadtxt(e_spectrometer_folder / 'spectrum_energy_axis_MeV.dat')
