@@ -1,5 +1,18 @@
-.burst button {
-    text-align: left;
+.burst-summary {
+    display: flex;
+    align-items: center; /* Vertically center the items */
+    border: 2px solid black;
 }
 
-.burst-shots {}
+.burst-summary button {
+    font-size: 18px;
+    font-weight: bold;
+    padding: 10px 20px;
+    margin-left: 20px; 
+    margin-right: 20px;
+}
+
+.burst-averages {
+    padding: 5px 10px;
+}
+
