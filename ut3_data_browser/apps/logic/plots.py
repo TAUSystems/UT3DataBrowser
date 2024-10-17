@@ -46,13 +46,13 @@ def plot_pointing_and_spectrum(burst_timestamp: datetime, shot_timestamp: dateti
     spectrum_lineout = np.loadtxt(e_spectrometer_folder / 'spectrum_AU_per_MeV.dat')
     spectrum_lineout_energy_axis = np.loadtxt(e_spectrometer_folder / 'spectrum_energy_axis_MeV.dat')
 
-    fig = plt.figure(figsize=(18, 4.5), num='pointing_and_spectrum')
+    fig = plt.figure(figsize=(18, 4.5), num='pointing_and_spectrum'); fig.clf()
     ax_pointing = fig.add_axes((0.05, 0.10, 0.20, 0.80))
     ax_spectrum = fig.add_axes((0.30, 0.10, 0.68, 0.80))
 
-    ax_pointing.pcolormesh(pointing_image.x_axis, pointing_image.y_axis, pointing_image.image)
-    ax_spectrum.pcolormesh(low_energy_image.x_axis, low_energy_image.y_axis, low_energy_image.image, alpha=0.7)
-    ax_spectrum.pcolormesh(high_energy_image.x_axis, high_energy_image.y_axis, high_energy_image.image, alpha=0.7)
+    ax_pointing.pcolormesh(pointing_image.x_axis[::3], pointing_image.y_axis[::3], pointing_image.image[::3, ::3])
+    ax_spectrum.pcolormesh(low_energy_image.x_axis[::3], low_energy_image.y_axis[::3], low_energy_image.image[::3, ::3], alpha=0.7)
+    ax_spectrum.pcolormesh(high_energy_image.x_axis[::3], high_energy_image.y_axis[::3], high_energy_image.image[::3, ::3], alpha=0.7)
 
     ax_pointing.set(xlabel="horizontal angle [mrad]", ylabel="vertical angle [mrad]")
     ax_spectrum.set(xlabel="energy [MeV]", ylabel="horizontal angle [mrad]")
