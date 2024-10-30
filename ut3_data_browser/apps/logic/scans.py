@@ -14,8 +14,9 @@ from .utils.measurement_db import get_sqlalchemy_engine, get_tables
 from .settings import load_config
 from ..types import VariableName
 
-sqlalchemy_engine = get_sqlalchemy_engine()
-tables = get_tables()
+if load_config():
+    sqlalchemy_engine = get_sqlalchemy_engine()
+    tables = get_tables()
 
 class Scan(NamedTuple):
     timestamp: datetime
@@ -50,9 +51,13 @@ def row_to_scan(row: ScanRow) -> Scan:
             )
 
 def get_scans() -> list[Scan]:
-    select_stmt = select(tables['scan']).order_by(tables['scan'].c.timestamp.desc())
-    with sqlalchemy_engine.connect() as connection:
-        return [row_to_scan(row) for row in connection.execute(select_stmt)]
+    try:
+        select_stmt = select(tables['scan']).order_by(tables['scan'].c.timestamp.desc())
+        with sqlalchemy_engine.connect() as connection:
+            return [row_to_scan(row) for row in connection.execute(select_stmt)]
+    except Exception as err:
+        print(f"Error getting scans: {err}")
+        return []
 
 def get_scan(timestamp: datetime) -> Scan:
     with sqlalchemy_engine.connect() as connection:
