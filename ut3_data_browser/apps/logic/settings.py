@@ -83,7 +83,7 @@ class UserDataConfiguration(Configuration):
         config = ConfigurationDict({})
 
         config['scalars'] = {
-            'variables_shown': form_data['variables_shown'].split('\n'),
+            'variables_shown': [var for var in form_data['variables_shown'].split('\n') if var],
         }
 
         config['directories'] = {
