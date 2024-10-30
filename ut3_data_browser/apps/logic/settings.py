@@ -30,7 +30,7 @@ def default_configuration_dict() -> ConfigurationDict:
         'measurement_db': {
             'driver': '',
             'host': '',
-            'port': '',
+            'port': 0,
             'dbname': '',
             'username': '',
             'password': '',
@@ -148,7 +148,7 @@ class UserDataConfiguration(Configuration):
             logger.error(f"Error parsing TOML file {self.config_path()}: {err}")
             return config
 
-        for section_key, section_options in loaded_config:
+        for section_key, section_options in loaded_config.items():
             try:
                 config[section_key].update(section_options)
             except (TypeError, ValueError) as err:
