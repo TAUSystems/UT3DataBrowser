@@ -11,7 +11,7 @@ from flask import render_template, redirect, Response, request
 from datetime import datetime
 from pathlib import Path
 
-from ..logic.scans import get_scans, get_scan, get_scan_results_for_scan_page
+from ..logic.scans import ScanData, get_scans, get_scan, get_scan_results_for_scan_page
 from ..logic.plots import plot_pointing_and_spectrum
 from .forms import SettingsForm
 from ..logic.settings import save_config, load_config
@@ -27,9 +27,18 @@ def list_scans():
 
 @blueprint.route('/scans/<timestamp>')
 def show_scan(timestamp: str):
-    scan_timestamp: datetime = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%f')
-    scan = get_scan(scan_timestamp)
-    scan_results = get_scan_results_for_scan_page(scan_timestamp)
+    try:
+        scan_timestamp: datetime = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%f')
+    except ValueError:
+        raise ValueError("timestamp must be in format %Y-%m-%dT%H:%M:%S.%f")
+    
+    try:
+        scan = get_scan(scan_timestamp)
+        scan_results = get_scan_results_for_scan_page(scan_timestamp)
+    except Exception as err:
+        scan = None
+        scan_results = ScanData(scan_timestamp, [])
+
     return render_template("home/scan.html", scan=scan, scan_results=scan_results)
 
 @blueprint.route('/settings', methods=['GET', 'POST'])
