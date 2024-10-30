@@ -44,6 +44,8 @@ def settings():
         config = load_config()
 
         if config: 
+            form.variables_shown.data = '\n'.join(config['scalars']['variables_shown'])
+            
             form.epics_daq_test_folder_path.data = config['directories']['epics_daq_test_folder_path']
             
             form.measurement_db_driver.data = config['measurement_db']['driver']
