@@ -90,6 +90,7 @@ class UserDataConfiguration(Configuration):
             'measurement_db_dbname': form_data['measurement_db_dbname'],
             'measurement_db_username': form_data['measurement_db_username'],
             'measurement_db_password': form_data['measurement_db_password'],
+        }
 
         cp['plot'] = {
             'pointing_intensity_max': form_data['plot_pointing_intensity_max'],
