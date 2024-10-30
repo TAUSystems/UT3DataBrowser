@@ -35,7 +35,7 @@ class SettingsForm(FlaskForm):
         description="Username to access the measurement database server",
     )
 
-    measurement_db_password = PasswordField("Measurement DB password",
+    measurement_db_password = StringField("Measurement DB password",
         description="Password to access the measurement database server",
     )
 
