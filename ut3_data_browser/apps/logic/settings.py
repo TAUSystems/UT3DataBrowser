@@ -99,7 +99,7 @@ class UserDataConfiguration(Configuration):
             'password': form_data['measurement_db_password'],
         }
 
-        cp['plot'] = {
+        config['plot'] = {
             'pointing_intensity_max': form_data['plot_pointing_intensity_max'],
             'spectrum_intensity_max': form_data['plot_spectrum_intensity_max'],
             'spectrum_lineout_max': form_data['plot_spectrum_lineout_max'],
