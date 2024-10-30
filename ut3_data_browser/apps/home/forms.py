@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from flask_wtf import FlaskForm
-from wtforms import PasswordField, StringField, SubmitField, IntegerField
+from wtforms import PasswordField, StringField, SubmitField, FloatField, IntegerField
 from wtforms.validators import InputRequired, Regexp
 
 class SettingsForm(FlaskForm):
@@ -33,6 +33,21 @@ class SettingsForm(FlaskForm):
 
     measurement_db_password = PasswordField("Measurement DB password",
         description="Password to access the measurement database server",
+    )
+
+    plot_pointing_intensity_max = FloatField("Pointing image intensity max",
+        description="Upper limit of color scale for pointing image, in AU/mrad^2",
+        default=1.0,
+    )
+
+    plot_spectrum_intensity_max = FloatField("Spectrum image intensity max",
+        description="Upper limit of color scale for spectrum image, in AU/MeV/mrad",
+        default=0.1,
+    )
+
+    plot_spectrum_lineout_max = FloatField("Spectrum lineout max",
+        description="Upper limit of y-axis for spectrum lineout plot, in AU/MeV",
+        default=200.0,
     )
 
     submit = SubmitField("Save settings")

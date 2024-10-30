@@ -92,6 +92,12 @@ class UserDataConfiguration(Configuration):
             'password': form_data['measurement_db_password'],
         }
 
+        cp['plot'] = {
+            'pointing_intensity_max': form_data['plot_pointing_intensity_max'],
+            'spectrum_intensity_max': form_data['plot_spectrum_intensity_max'],
+            'spectrum_lineout_max': form_data['plot_spectrum_lineout_max'],
+        }
+
         self.config_path().parent.mkdir(parents=True, exist_ok=True)
 
         with self.config_path().open('w') as f:
@@ -112,6 +118,9 @@ class UserDataConfiguration(Configuration):
             if 'measurement_db' not in cp.sections():
                 raise ValueError("measurement_db not found in config")
 
+            if 'plot' not in cp.sections():
+                raise ValueError("plot not found in config")
+
             return {section_name: dict(cp.items(section_name)) for section_name in cp.sections()}
 
         except:
@@ -125,5 +134,10 @@ class UserDataConfiguration(Configuration):
                         'dbname': "",
                         'username': "",
                         'password': "",
+                    }, 
+                    'plot': {
+                        'pointing_intensity_max': 1.0,
+                        'spectrum_intensity_max': 0.1,
+                        'spectrum_lineout_max': 200.0,
                     }
             }

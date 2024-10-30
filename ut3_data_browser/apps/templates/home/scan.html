@@ -50,13 +50,17 @@
           <div class="card-body">
             {% for burst in scan_results.bursts %}
             <div id="burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}" class="burst">
-              <button data-toggle="collapse" data-target="#burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}-shots" aria-expanded="false">
-                <h5>Burst {{ burst.seq }}</h5>
-                {% for variable_name, value in burst.averages.items() %}
-                  {{ variable_name }} = {{ value }}<br/>
-                {% endfor %}
-              </button>
-
+              <div id="burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}-summary" class="burst-summary">
+                <button data-toggle="collapse" data-target="#burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}-shots" aria-expanded="false">
+                  Burst {{ burst.seq }}
+                </button>
+                <div id="burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}-averages" class="burst-averages">
+                  {% for variable_name, value in burst.averages.items() %}
+                    {{ variable_name }} = {{ value }}<br/>
+                  {% endfor %}
+                </div>
+                <!-- TODO: waterfall spectrum image -->
+              </div>
               <div id="burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}-shots" class="collapse burst-shots">
                 <table class="table align-items-center table-flush">
                   <thead class="thead-light">
@@ -74,12 +78,17 @@
                         {% endfor %}
                       </td>
                       <td>
-                        <img src="{{ url_for('home_blueprint.image', 
-                                     burst_timestamp=burst.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f'),
-                                     shot_timestamp=shot_data.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f'),
-                                     device='E-Spectrometer',
-                                     subject='pointing_and_spectrum.png')
-                                  }}" alt="Pointing and spectrum" width="100%"/><br/>
+                        <img 
+                          class="lazyload"
+                          src="{{ url_for('static', filename='assets/img/plots/loading_pointing_and_spectrum.png') }}"
+                          data-src="{{ url_for('home_blueprint.pointing_and_spectrum', 
+                                       burst_timestamp=burst.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f'),
+                                       shot_timestamp=shot_data.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f')
+                                   )
+                                }}"
+                          alt="Pointing and spectrum" 
+                          width="100%"
+                        /><br/>
                       </td>
                     </tr>
                     {% endfor %}
