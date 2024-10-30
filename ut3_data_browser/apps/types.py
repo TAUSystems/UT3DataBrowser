@@ -2,6 +2,11 @@ from __future__ import annotations
 
 from typing import NewType, TypedDict
 
+VariableName = NewType('VariableName', str)
+
+class ScalarsConfigurationDict(TypedDict):
+    variables_shown: list[VariableName]
+
 class DirectoriesConfigurationDict(TypedDict):
     epics_daq_test_folder_path: str
 
@@ -19,8 +24,7 @@ class PlotConfigurationDict(TypedDict):
     spectrum_lineout_max: float
 
 class ConfigurationDict(TypedDict):
+    scalars: ScalarsConfigurationDict
     directories: DirectoriesConfigurationDict
     measurement_db: MeasurementDBConfigurationDict
     plot: PlotConfigurationDict
-
-VariableName = NewType('VariableName', str)

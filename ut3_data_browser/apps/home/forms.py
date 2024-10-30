@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 from flask_wtf import FlaskForm
-from wtforms import PasswordField, StringField, SubmitField, FloatField, IntegerField
+from wtforms import PasswordField, StringField, SubmitField, FloatField, IntegerField, TextAreaField
 from wtforms.validators import InputRequired, Regexp
 
 class SettingsForm(FlaskForm):
+    variables_shown = TextAreaField("Variables shown",
+        description="List of variables to be shown on the scan page"
+    )
+
     epics_daq_test_folder_path = StringField("EPICS-DAQ-Test folder path",
         description="Folder containing data and analysis folders for the EPICS-DAQ-Test experiment", 
     )

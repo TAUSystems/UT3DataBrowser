@@ -14,8 +14,9 @@ from .utils.measurement_db import get_sqlalchemy_engine, get_tables
 from .settings import load_config
 from ..types import VariableName
 
-sqlalchemy_engine = get_sqlalchemy_engine()
-tables = get_tables()
+if load_config():
+    sqlalchemy_engine = get_sqlalchemy_engine()
+    tables = get_tables()
 
 class Scan(NamedTuple):
     timestamp: datetime
@@ -50,9 +51,13 @@ def row_to_scan(row: ScanRow) -> Scan:
             )
 
 def get_scans() -> list[Scan]:
-    select_stmt = select(tables['scan']).order_by(tables['scan'].c.timestamp.desc())
-    with sqlalchemy_engine.connect() as connection:
-        return [row_to_scan(row) for row in connection.execute(select_stmt)]
+    try:
+        select_stmt = select(tables['scan']).order_by(tables['scan'].c.timestamp.desc())
+        with sqlalchemy_engine.connect() as connection:
+            return [row_to_scan(row) for row in connection.execute(select_stmt)]
+    except Exception as err:
+        print(f"Error getting scans: {err}")
+        return []
 
 def get_scan(timestamp: datetime) -> Scan:
     with sqlalchemy_engine.connect() as connection:
@@ -179,20 +184,8 @@ def calculate_burst_averages(burst: BurstData) -> dict[VariableName, float]:
 def get_scan_results_for_scan_page(scan_timestamp: datetime, variable_names: Optional[list[str]] = None) -> ScanData:
 
     if variable_names is None:
-        # TODO: get variable names from configuration
-        variable_names = ['Plasma:Position:HorizontalX:Absolute_GET', 
-                          'Plasma:Position:VerticalY:Absolute_GET', 
-                          'Plasma:Position:LongitudinalZ:Absolute_GET', 
-
-                          'E:Spectrometer:mean_energy_MeV',
-                          'E:Spectrometer:std_energy_MeV',
-                          'E:Spectrometer:dE_over_E',
-
-                          'E:Spectrometer:pointing_deviation_x',
-                          'E:Spectrometer:pointing_deviation_y',
-                          'E:Spectrometer:divergence_x',
-                          'E:Spectrometer:divergence_y',
-                         ]
+        config = load_config()
+        variable_names = config['scalars']['variables_shown']
 
     scan_measurements: list[Row] = get_scan_measurements_from_db(scan_timestamp, variable_names)
     scan_data = ScanData(

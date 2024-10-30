@@ -44,14 +44,17 @@ def settings():
     else:
         config = load_config()
 
-        form.epics_daq_test_folder_path.data = config['directories']['epics_daq_test_folder_path']
-        
-        form.measurement_db_driver.data = config['measurement_db']['driver']
-        form.measurement_db_host.data = config['measurement_db']['host']
-        form.measurement_db_port.data = config['measurement_db']['port']
-        form.measurement_db_dbname.data = config['measurement_db']['dbname']
-        form.measurement_db_username.data = config['measurement_db']['username']
-        form.measurement_db_password.data = config['measurement_db']['password']
+        if config: 
+            form.variables_shown.data = '\n'.join(config['scalars']['variables_shown'])
+            
+            form.epics_daq_test_folder_path.data = config['directories']['epics_daq_test_folder_path']
+            
+            form.measurement_db_driver.data = config['measurement_db']['driver']
+            form.measurement_db_host.data = config['measurement_db']['host']
+            form.measurement_db_port.data = config['measurement_db']['port']
+            form.measurement_db_dbname.data = config['measurement_db']['dbname']
+            form.measurement_db_username.data = config['measurement_db']['username']
+            form.measurement_db_password.data = config['measurement_db']['password']
 
         form.plot_pointing_intensity_max.data = config['plot']['pointing_intensity_max']
         form.plot_spectrum_intensity_max.data = config['plot']['spectrum_intensity_max']
