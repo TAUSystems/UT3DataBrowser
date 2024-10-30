@@ -67,7 +67,8 @@ class MeasurementDBEngine:
         
         if not self._sqlalchemy_engine:
             self._tables = {}
-        
+            return
+
         measurement_db_metadata = MetaData()
         measurement_db_metadata.reflect(self._sqlalchemy_engine)
 
