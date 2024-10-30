@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from flask_wtf import FlaskForm
-from wtforms import PasswordField, StringField, SubmitField, TextAreaField, SelectField
+from wtforms import PasswordField, StringField, SubmitField, IntegerField
 from wtforms.validators import InputRequired, Regexp
 
 class SettingsForm(FlaskForm):
@@ -17,9 +17,9 @@ class SettingsForm(FlaskForm):
         description="IP address or hostname of the measurement database server",
     )
 
-    measurement_db_port = StringField("Measurement DB port",
+    measurement_db_port = IntegerField("Measurement DB port",
         description="Port of the measurement database server",
-        default="3306",
+        default=3306,
     )
 
     measurement_db_dbname = StringField("Measurement DB database name",

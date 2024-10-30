@@ -83,13 +83,13 @@ class UserDataConfiguration(Configuration):
             'epics_daq_test_folder_path': form_data['epics_daq_test_folder_path'],
         }
 
-        cp['Database'] = {
-            'measurement_db_driver': form_data['measurement_db_driver'],
-            'measurement_db_host': form_data['measurement_db_host'],
-            'measurement_db_port': form_data['measurement_db_port'],
-            'measurement_db_dbname': form_data['measurement_db_dbname'],
-            'measurement_db_username': form_data['measurement_db_username'],
-            'measurement_db_password': form_data['measurement_db_password'],
+        cp['measurement_db'] = {
+            'driver': form_data['measurement_db_driver'],
+            'host': form_data['measurement_db_host'],
+            'port': form_data['measurement_db_port'],
+            'dbname': form_data['measurement_db_dbname'],
+            'username': form_data['measurement_db_username'],
+            'password': form_data['measurement_db_password'],
         }
 
         self.config_path().parent.mkdir(parents=True, exist_ok=True)
