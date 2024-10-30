@@ -53,6 +53,10 @@ def settings():
         form.measurement_db_username.data = config['measurement_db']['username']
         form.measurement_db_password.data = config['measurement_db']['password']
 
+        form.plot_pointing_intensity_max.data = config['plot']['pointing_intensity_max']
+        form.plot_spectrum_intensity_max.data = config['plot']['spectrum_intensity_max']
+        form.plot_spectrum_lineout_max.data = config['plot']['spectrum_lineout_max']
+
         return render_template("home/settings.html", form=form)
 
 

@@ -50,9 +50,12 @@ def plot_pointing_and_spectrum(burst_timestamp: datetime, shot_timestamp: dateti
     ax_pointing = fig.add_axes((0.05, 0.10, 0.20, 0.80))
     ax_spectrum = fig.add_axes((0.30, 0.10, 0.68, 0.80))
 
-    ax_pointing.pcolormesh(pointing_image.x_axis[::3], pointing_image.y_axis[::3], pointing_image.image[::3, ::3])
-    ax_spectrum.pcolormesh(low_energy_image.x_axis[::3], low_energy_image.y_axis[::3], low_energy_image.image[::3, ::3], alpha=0.7)
-    ax_spectrum.pcolormesh(high_energy_image.x_axis[::3], high_energy_image.y_axis[::3], high_energy_image.image[::3, ::3], alpha=0.7)
+    p = ax_pointing.pcolormesh(pointing_image.x_axis[::3], pointing_image.y_axis[::3], pointing_image.image[::3, ::3])
+    p.set_clim(0, config['plot']['pointing_intensity_max'])
+    p = ax_spectrum.pcolormesh(low_energy_image.x_axis[::3], low_energy_image.y_axis[::3], low_energy_image.image[::3, ::3], alpha=0.7)
+    p.set_clim(0, config['plot']['spectrum_intensity_max'])
+    p = ax_spectrum.pcolormesh(high_energy_image.x_axis[::3], high_energy_image.y_axis[::3], high_energy_image.image[::3, ::3], alpha=0.7)
+    p.set_clim(0, config['plot']['spectrum_intensity_max'])
 
     ax_pointing.set(xlabel="horizontal angle [mrad]", ylabel="vertical angle [mrad]")
     ax_spectrum.set(xlabel="energy [MeV]", ylabel="horizontal angle [mrad]")
@@ -60,5 +63,6 @@ def plot_pointing_and_spectrum(burst_timestamp: datetime, shot_timestamp: dateti
     ax_spectrum_lineout = ax_spectrum.twinx()
     ax_spectrum_lineout.set(yticks=[])
     ax_spectrum_lineout.plot(spectrum_lineout_energy_axis, spectrum_lineout, color='yellow', alpha=0.7)
+    ax_spectrum_lineout.set_ylim(0, config['plot']['spectrum_lineout_max'])
 
     return fig

@@ -13,8 +13,14 @@ class MeasurementDBConfigurationDict(TypedDict):
     username: str
     password: str
 
+class PlotConfigurationDict(TypedDict):
+    pointing_intensity_max: float
+    spectrum_intensity_max: float
+    spectrum_lineout_max: float
+
 class ConfigurationDict(TypedDict):
     directories: DirectoriesConfigurationDict
     measurement_db: MeasurementDBConfigurationDict
+    plot: PlotConfigurationDict
 
 VariableName = NewType('VariableName', str)
