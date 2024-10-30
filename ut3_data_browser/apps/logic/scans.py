@@ -184,20 +184,8 @@ def calculate_burst_averages(burst: BurstData) -> dict[VariableName, float]:
 def get_scan_results_for_scan_page(scan_timestamp: datetime, variable_names: Optional[list[str]] = None) -> ScanData:
 
     if variable_names is None:
-        # TODO: get variable names from configuration
-        variable_names = ['Plasma:Position:HorizontalX:Absolute_GET', 
-                          'Plasma:Position:VerticalY:Absolute_GET', 
-                          'Plasma:Position:LongitudinalZ:Absolute_GET', 
-
-                          'E:Spectrometer:mean_energy_MeV',
-                          'E:Spectrometer:std_energy_MeV',
-                          'E:Spectrometer:dE_over_E',
-
-                          'E:Spectrometer:pointing_deviation_x',
-                          'E:Spectrometer:pointing_deviation_y',
-                          'E:Spectrometer:divergence_x',
-                          'E:Spectrometer:divergence_y',
-                         ]
+        config = load_config()
+        variable_names = config['scalars']['variables_shown']
 
     scan_measurements: list[Row] = get_scan_measurements_from_db(scan_timestamp, variable_names)
     scan_data = ScanData(
