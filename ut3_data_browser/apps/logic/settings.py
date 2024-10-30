@@ -79,6 +79,11 @@ class UserDataConfiguration(Configuration):
 
     def save(self, form_data: dict):
         cp = ConfigParser()
+
+        cp['scalars'] = {
+            'variables_shown': form_data['variables_shown'],
+        }
+
         cp['directories'] = {
             'epics_daq_test_folder_path': form_data['epics_daq_test_folder_path'],
         }
@@ -105,6 +110,9 @@ class UserDataConfiguration(Configuration):
                 raise FileNotFoundError("Config file does not exist.")
 
             cp.read(self.config_path())
+
+            if 'scalars' not in cp.sections():
+                raise ValueError("scalars not found in config")
 
             if 'directories' not in cp.sections():
                 raise ValueError("directories not found in config")
