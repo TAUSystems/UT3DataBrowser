@@ -25,3 +25,4 @@ platformdirs = "^4.1.0"
 
 sqlalchemy = "^2.0.25"
 psycopg2 = "^2.9.9"
+toml = "^0.10.2"

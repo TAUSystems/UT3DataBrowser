@@ -7,10 +7,12 @@ from configparser import ConfigParser
 from dotenv import dotenv_values
 from os import environ
 
+import toml
+
 from ..types import ConfigurationDict
 
 def load_config() -> ConfigurationDict:
-    return DotenvConfiguration().load()
+    return UserDataConfiguration().load()
 
 def save_config(form_data: dict) -> None:
     UserDataConfiguration().save(form_data)
@@ -74,21 +76,21 @@ class UserDataConfiguration(Configuration):
     """
 
     def config_path(self) -> Path:
-        return Path(user_data_dir(appname="ut3_data_browser", appauthor="TAUSystems")) / "config.ini"
+        return Path(user_data_dir(appname="ut3_data_browser", appauthor="TAUSystems")) / "config.toml"
 
 
     def save(self, form_data: dict):
-        cp = ConfigParser()
+        config = ConfigurationDict({})
 
-        cp['scalars'] = {
-            'variables_shown': form_data['variables_shown'],
+        config['scalars'] = {
+            'variables_shown': form_data['variables_shown'].split('\n'),
         }
 
-        cp['directories'] = {
+        config['directories'] = {
             'epics_daq_test_folder_path': form_data['epics_daq_test_folder_path'],
         }
 
-        cp['measurement_db'] = {
+        config['measurement_db'] = {
             'driver': form_data['measurement_db_driver'],
             'host': form_data['measurement_db_host'],
             'port': form_data['measurement_db_port'],
@@ -100,38 +102,10 @@ class UserDataConfiguration(Configuration):
         self.config_path().parent.mkdir(parents=True, exist_ok=True)
 
         with self.config_path().open('w') as f:
-            cp.write(f)
+            toml.dump(config, f)
 
     def load(self) -> ConfigurationDict:
-        cp = ConfigParser()
-
         try:
-            if not self.config_path().exists():
-                raise FileNotFoundError("Config file does not exist.")
-
-            cp.read(self.config_path())
-
-            if 'scalars' not in cp.sections():
-                raise ValueError("scalars not found in config")
-
-            if 'directories' not in cp.sections():
-                raise ValueError("directories not found in config")
-
-            if 'measurement_db' not in cp.sections():
-                raise ValueError("measurement_db not found in config")
-
-            return {section_name: dict(cp.items(section_name)) for section_name in cp.sections()}
-
-        except:
-            return {'directories': {
-                        'epics_daq_test_folder_path': "",
-                    }, 
-                    'measurement_db': {
-                        'driver': "mariadb+pymysql",
-                        'host': "",
-                        'port': "",
-                        'dbname': "",
-                        'username': "",
-                        'password': "",
-                    }
-            }
+            return toml.load(self.config_path())
+        except FileNotFoundError:
+            return {}
