@@ -71,11 +71,11 @@ def plot_pointing_and_spectrum(burst_timestamp: datetime, shot_timestamp: dateti
         def sort_axes_if_necessary(image: ImageWithAxes) -> ImageWithAxes:
             if np.any(np.diff(image.x_axis) < 0):
                 x_sort_i = np.argsort(image.x_axis)
-                image.image = ImageWithAxes(image.image[:, x_sort_i], image.x_axis[x_sort_i], image.y_axis)
-            
+                image = ImageWithAxes(image.image[:, x_sort_i], image.x_axis[x_sort_i], image.y_axis)
+
             if np.any(np.diff(image.y_axis) < 0):
                 y_sort_i = np.argsort(image.y_axis)
-                image.image = ImageWithAxes(image.image[y_sort_i, :], image.x_axis, image.y_axis[y_sort_i])
+                image = ImageWithAxes(image.image[y_sort_i, :], image.x_axis, image.y_axis[y_sort_i])
 
             return image
 
