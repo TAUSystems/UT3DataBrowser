@@ -83,10 +83,10 @@ def plot_pointing_and_spectrum(burst_timestamp: datetime, shot_timestamp: dateti
         sort_axes_if_necessary(high_energy_image)
 
         assert low_energy_image.x_axis[0] < high_energy_image.x_axis[0] and low_energy_image.x_axis[-1] < high_energy_image.x_axis[-1], "Low energy image should have lower energy axis than high energy image"
-         
+
         def interpolate_and_stitch_image_in_overlap_region(image_with_common_y_axis: ImageWithAxes, image_to_interpolate: ImageWithAxes) -> ImageWithAxes:
             """ Interpolate the image_to_interpolate onto the common axis of image_with_common_axis """
-            
+
             def interpolate_one_column(image_column_values: np.ndarray) -> np.ndarray:
                 return np.interp(image_with_common_y_axis.y_axis,  image_to_interpolate.y_axis, image_column_values, left=np.nan, right=np.nan)
             interpolated_image = np.apply_along_axis(interpolate_one_column, axis=0, arr=image_to_interpolate.image)
@@ -126,13 +126,15 @@ def plot_pointing_and_spectrum(burst_timestamp: datetime, shot_timestamp: dateti
             overlap_image = interpolate_and_stitch_image_in_overlap_region(high_energy_image_overlap_region, low_energy_image_overlap_region)
 
         return low_energy_image_nonoverlap_region, overlap_image, high_energy_image_nonoverlap_region
-    
+
     low_energy_image_nonoverlap_region, overlap_image, high_energy_image_nonoverlap_region = stitch_spectrum_images(low_energy_image, high_energy_image)
 
     p = ax_pointing.pcolormesh(pointing_image.x_axis[::3], pointing_image.y_axis[::3], pointing_image.image[::3, ::3])
     p.set_clim(0, config['plot']['pointing_intensity_max'])
-    
+
     def plot_spectrum_image(image: ImageWithAxes) -> None:
+        if not image.image.size:
+            return
         p = ax_spectrum.pcolormesh(image.x_axis[::3], image.y_axis[::3], image.image[::3, ::3])
         p.set_clim(0, config['plot']['spectrum_intensity_max'])
 
