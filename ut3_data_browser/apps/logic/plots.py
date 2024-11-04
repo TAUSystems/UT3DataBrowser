@@ -127,7 +127,7 @@ def plot_pointing_and_spectrum(burst_timestamp: datetime, shot_timestamp: dateti
             )
 
         low_energy_image_nonoverlap_region, low_energy_image_overlap_region = split_image_along_x_axis(low_energy_image, high_energy_image.x_axis[0])
-        high_energy_image_nonoverlap_region, high_energy_image_overlap_region = split_image_along_x_axis(high_energy_image, low_energy_image.x_axis[-1])
+        high_energy_image_overlap_region, high_energy_image_nonoverlap_region = split_image_along_x_axis(high_energy_image, low_energy_image.x_axis[-1])
 
         # use the finer y-axis of the two for the common y-axis
         def mean_y_axis_resolution(image: ImageWithAxes) -> float:
