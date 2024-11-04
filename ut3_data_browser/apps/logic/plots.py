@@ -97,10 +97,14 @@ def plot_pointing_and_spectrum(burst_timestamp: datetime, shot_timestamp: dateti
 
             def interpolate_one_column(image_column_values: np.ndarray) -> np.ndarray:
                 return np.interp(image_with_common_y_axis.y_axis,  image_to_interpolate.y_axis, image_column_values, left=np.nan, right=np.nan)
-            interpolated_image = np.apply_along_axis(interpolate_one_column, axis=0, arr=image_to_interpolate.image)
+            interpolated_image = ImageWithAxes(
+                np.apply_along_axis(interpolate_one_column, axis=0, arr=image_to_interpolate.image),
+                image_to_interpolate.x_axis,
+                image_with_common_y_axis.y_axis
+            )
 
-            image = np.hstack([image_with_common_y_axis.image, interpolated_image])
-            x_axis = np.concatenate([image_with_common_y_axis.x_axis, image_to_interpolate.x_axis])
+            image = np.hstack([image_with_common_y_axis.image, interpolated_image.image])
+            x_axis = np.concatenate([image_with_common_y_axis.x_axis, interpolated_image.x_axis])
             x_sort_i = np.argsort(x_axis)
 
             stitched_image = ImageWithAxes(
@@ -134,6 +138,7 @@ def plot_pointing_and_spectrum(burst_timestamp: datetime, shot_timestamp: dateti
             overlap_image = interpolate_and_stitch_image_in_overlap_region(high_energy_image_overlap_region, low_energy_image_overlap_region)
 
         return low_energy_image_nonoverlap_region, overlap_image, high_energy_image_nonoverlap_region
+
 
     low_energy_image_nonoverlap_region, overlap_image, high_energy_image_nonoverlap_region = stitch_spectrum_images(low_energy_image, high_energy_image)
 
