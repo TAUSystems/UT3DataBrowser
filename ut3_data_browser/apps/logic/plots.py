@@ -69,6 +69,14 @@ def plot_pointing_and_spectrum(burst_timestamp: datetime, shot_timestamp: dateti
 
         """
         def sort_axes_if_necessary(image: ImageWithAxes) -> ImageWithAxes:
+            # first check if axes need to be flipped
+            if image.x_axis[-1] < image.x_axis[0]:
+                image = ImageWithAxes(image.image[:, ::-1], image.x_axis[::-1], image.y_axis)
+
+            if image.y_axis[-1] < image.y_axis[0]:
+                image = ImageWithAxes(image.image[::-1, :], image.x_axis, image.y_axis[::-1])
+
+            # only run sort operation if axes aren't sorted already
             if np.any(np.diff(image.x_axis) < 0):
                 x_sort_i = np.argsort(image.x_axis)
                 image = ImageWithAxes(image.image[:, x_sort_i], image.x_axis[x_sort_i], image.y_axis)
@@ -79,8 +87,8 @@ def plot_pointing_and_spectrum(burst_timestamp: datetime, shot_timestamp: dateti
 
             return image
 
-        sort_axes_if_necessary(low_energy_image)
-        sort_axes_if_necessary(high_energy_image)
+        low_energy_image = sort_axes_if_necessary(low_energy_image)
+        high_energy_image = sort_axes_if_necessary(high_energy_image)
 
         assert low_energy_image.x_axis[0] < high_energy_image.x_axis[0] and low_energy_image.x_axis[-1] < high_energy_image.x_axis[-1], "Low energy image should have lower energy axis than high energy image"
 
