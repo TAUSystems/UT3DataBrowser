@@ -91,15 +91,15 @@ def plot_pointing_and_spectrum(burst_timestamp: datetime, shot_timestamp: dateti
                 return np.interp(image_with_common_y_axis.y_axis,  image_to_interpolate.y_axis, image_column_values, left=np.nan, right=np.nan)
             interpolated_image = np.apply_along_axis(interpolate_one_column, axis=0, arr=image_to_interpolate.image)
 
+            image = np.hstack([image_with_common_y_axis.image, interpolated_image])
+            x_axis = np.concatenate([image_with_common_y_axis.x_axis, image_to_interpolate.x_axis])
+            x_sort_i = np.argsort(x_axis)
+
             stitched_image = ImageWithAxes(
-                np.hstack([image_with_common_y_axis.image, interpolated_image]),
-                np.concatenate([image_with_common_y_axis.x_axis, image_to_interpolate.x_axis]),
+                image[:, x_sort_i],
+                x_axis[x_sort_i],
                 image_with_common_y_axis.y_axis
             )
-
-            x_sort_i = np.argsort(stitched_image.x_axis)
-            stitched_image.image = stitched_image.image[:, x_sort_i]
-            stitched_image.x_axis = stitched_image.x_axis[x_sort_i]
 
             return stitched_image
 
