@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import NamedTuple
+from typing import NamedTuple, Callable
 
 import matplotlib.pyplot as plt
 import numpy as np
 import tifffile
 
 from .settings import load_config
+from .utils.functools import compose
 
 class ImageWithAxes(NamedTuple):
     """ 2D array with specified x and y axes """
@@ -115,6 +116,134 @@ def stitch_spectrum_images(low_energy_image: ImageWithAxes, high_energy_image: I
 
     return low_energy_image_nonoverlap_region, overlap_image, high_energy_image_nonoverlap_region
 
+def preprocess_spectrum_images(low_energy_image: ImageWithAxes, high_energy_image: ImageWithAxes) -> tuple[ImageWithAxes, ImageWithAxes]:
+    """ Background-subtracts and normalizes spectrum images
+
+    Only used for data before 2024-11-01, because the data after that date is
+    background-subtracted and normalized by energy bin width and angle bin width
+    in the (Python) electron spectrometer image analyzer.
+
+    Parameters
+    ----------
+    low_energy_image : ImageWithAxes
+    high_energy_image : ImageWithAxes
+
+    Returns
+    -------
+    low_energy_image : ImageWithAxes
+    high_energy_image : ImageWithAxes
+
+    """
+    
+    def preprocess_spectrum_image(spectrum_image: ImageWithAxes, background: float = None) -> ImageWithAxes:
+        """ Preprocess the spectrum image before analysis 
+        
+        Preprocessing involves the steps:
+        - flip the axes if necessary
+        - remove duplicate axes values
+            if the x-axis or y-axis has duplicate values, remove those rows or 
+            columns
+        - adjust image values to axes
+            adjust the image values from brightness/px^2 to brightness/MeV/mrad
+        - remove values on x-axis edges
+
+        Copied from https://github.com/TAUSystems/image-processing-backend/blob/6b024f1d138f66cdfbbe180d7d8bf5a74e581bbe/applications/rq_worker/src/analyzers/electron_spectrometer.py#L169
+
+        """
+
+
+        # flip axes if necessary
+        def flip_axes(spectrum: ImageWithAxes) -> ImageWithAxes:
+            spectrum_out = ImageWithAxes(
+                image = spectrum.image,
+                x_axis = spectrum.x_axis,
+                y_axis = spectrum.y_axis
+            )
+
+            if spectrum_out.x_axis[0] > spectrum_out.x_axis[-1]:
+                spectrum_out = ImageWithAxes(
+                    image = np.flip(spectrum_out.image, axis=1),
+                    x_axis = np.flip(spectrum_out.x_axis),
+                    y_axis = spectrum_out.y_axis
+                )
+
+            if spectrum_out.y_axis[0] > spectrum_out.y_axis[-1]:
+                spectrum_out = ImageWithAxes(
+                    image = np.flip(spectrum_out.image, axis=0),
+                    x_axis = spectrum_out.x_axis,
+                    y_axis = np.flip(spectrum_out.y_axis)
+                )
+
+            assert np.all(np.diff(spectrum_out.x_axis) >= 0), "Error in flip_axes: x-axis is not monotonic."
+            assert np.all(np.diff(spectrum_out.y_axis) >= 0), "Error in flip_axes: y-axis is not monotonic."
+
+            return spectrum_out
+
+        def remove_duplicate_axes_values(spectrum: ImageWithAxes) -> ImageWithAxes:
+            # np.diff(x) > 0  is a boolean array that is one element shorter than x
+            # add a True to the end so that the last element is always kept
+            sx = np.append(np.diff(spectrum.x_axis) > 0, True)
+            sy = np.append(np.diff(spectrum.y_axis) > 0, True)
+
+            return ImageWithAxes(
+                image = spectrum.image[sy][:, sx],
+                x_axis = spectrum.x_axis[sx],
+                y_axis = spectrum.y_axis[sy]
+            )
+
+        def subtract_background(spectrum: ImageWithAxes) -> ImageWithAxes:
+            if background is None:
+                # for now, just subtract the minimum column-wise average, keeping
+                # the image non-negative. 
+                # This must happen before adjusting image values because background 
+                # is assumed to be constant per pixel, not per MeV/mrad
+                # TODO: more advanced background subtraction
+                background = np.min(np.mean(spectrum.image, axis=0))
+                
+            background_subtracted_image = spectrum.image - background
+            return ImageWithAxes(
+                image = background_subtracted_image,
+                x_axis = spectrum.x_axis,
+                y_axis = spectrum.y_axis
+            )
+
+        # adjust image values from brightness/px^2 to brightness/MeV/mrad
+        def adjust_image_values_to_axes(spectrum: ImageWithAxes) -> ImageWithAxes:
+            return ImageWithAxes(
+                image = spectrum.image / np.gradient(spectrum.x_axis)[None, :] / np.gradient(spectrum.y_axis)[:, None],
+                x_axis = spectrum.x_axis,
+                y_axis = spectrum.y_axis
+            )
+
+        # remove values on x-axis edges, because they can have interpolation artifacts
+        def remove_values_on_xaxis_edges(spectrum: ImageWithAxes) -> ImageWithAxes:
+            return ImageWithAxes(
+                image = spectrum.image[:, 1:-1],
+                x_axis = spectrum.x_axis[1:-1],
+                y_axis = spectrum.y_axis
+            )
+
+        process_spectrum: Callable[[ImageWithAxes], ImageWithAxes] = compose(
+            flip_axes, 
+            remove_duplicate_axes_values,
+            subtract_background,
+            adjust_image_values_to_axes,
+            remove_values_on_xaxis_edges,
+        )
+
+        return process_spectrum(spectrum_image)
+
+    low_energy_image, high_energy_image = preprocess_spectrum_image(low_energy_image, background=0.1710), preprocess_spectrum_image(high_energy_image, background=0.1845)
+
+    # scale low energy image to match intensity of high energy image
+    low_energy_image = ImageWithAxes(
+        image = low_energy_image.image * 2.211,
+        x_axis = low_energy_image.x_axis,
+        y_axis = low_energy_image.y_axis
+    )
+
+    return low_energy_image, high_energy_image
+
 
 def plot_pointing_and_spectrum(burst_timestamp: datetime, shot_timestamp: datetime):
     """ Plot pointing image and spectrum image side by side 
@@ -134,6 +263,9 @@ def plot_pointing_and_spectrum(burst_timestamp: datetime, shot_timestamp: dateti
 
     spectrum_lineout = np.loadtxt(e_spectrometer_folder / 'spectrum_AU_per_MeV.dat')
     spectrum_lineout_energy_axis = np.loadtxt(e_spectrometer_folder / 'spectrum_energy_axis_MeV.dat')
+
+    if burst_timestamp < datetime(2024, 11, 2, 1, 6, 32):  # deployed rq-worker:1231fa7 at this time
+        low_energy_image, high_energy_image = preprocess_spectrum_images(low_energy_image, high_energy_image)
 
     low_energy_image_nonoverlap_region, overlap_image, high_energy_image_nonoverlap_region = stitch_spectrum_images(low_energy_image, high_energy_image)
 
