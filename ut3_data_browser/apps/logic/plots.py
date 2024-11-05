@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 from typing import NamedTuple, Callable
+from functools import partial
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -191,7 +192,7 @@ def preprocess_spectrum_images(low_energy_image: ImageWithAxes, high_energy_imag
                 y_axis = spectrum.y_axis[sy]
             )
 
-        def subtract_background(spectrum: ImageWithAxes) -> ImageWithAxes:
+        def subtract_background(spectrum: ImageWithAxes, background: float = None) -> ImageWithAxes:
             if background is None:
                 # for now, just subtract the minimum column-wise average, keeping
                 # the image non-negative. 
@@ -226,7 +227,7 @@ def preprocess_spectrum_images(low_energy_image: ImageWithAxes, high_energy_imag
         process_spectrum: Callable[[ImageWithAxes], ImageWithAxes] = compose(
             flip_axes, 
             remove_duplicate_axes_values,
-            subtract_background,
+            partial(subtract_background, background=background),
             adjust_image_values_to_axes,
             remove_values_on_xaxis_edges,
         )
