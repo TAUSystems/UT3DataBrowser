@@ -117,7 +117,9 @@ def stitch_spectrum_images(low_energy_image: ImageWithAxes, high_energy_image: I
 
     return low_energy_image_nonoverlap_region, overlap_image, high_energy_image_nonoverlap_region
 
-def preprocess_spectrum_images(low_energy_image: ImageWithAxes, high_energy_image: ImageWithAxes) -> tuple[ImageWithAxes, ImageWithAxes]:
+def preprocess_spectrum_images(low_energy_image: ImageWithAxes, high_energy_image: ImageWithAxes, 
+                               low_energy_background: float = 1.674e-03, high_energy_background: float = 1.030e-03, intensity_scale_factor: float = 0.8221
+                              ) -> tuple[ImageWithAxes, ImageWithAxes]:
     """ Background-subtracts and normalizes spectrum images
 
     Only used for data before 2024-11-01, because the data after that date is
@@ -128,6 +130,15 @@ def preprocess_spectrum_images(low_energy_image: ImageWithAxes, high_energy_imag
     ----------
     low_energy_image : ImageWithAxes
     high_energy_image : ImageWithAxes
+
+    low_energy_background : float
+    high_energy_background : float
+        Subtract these background values from the spectrum image before adjusting 
+        by energy and angle bin widths
+
+    intensity_scale_factor : float
+        Multiply the low energy image by this factor to match the intensity of 
+        the high energy image
 
     Returns
     -------
@@ -234,11 +245,11 @@ def preprocess_spectrum_images(low_energy_image: ImageWithAxes, high_energy_imag
 
         return process_spectrum(spectrum_image)
 
-    low_energy_image, high_energy_image = preprocess_spectrum_image(low_energy_image, background=5.225e-03), preprocess_spectrum_image(high_energy_image, background=5.261e-03)
+    low_energy_image, high_energy_image = preprocess_spectrum_image(low_energy_image, background=low_energy_background), preprocess_spectrum_image(high_energy_image, background=high_energy_background)
 
     # scale low energy image to match intensity of high energy image
     low_energy_image = ImageWithAxes(
-        image = low_energy_image.image * 2.551e+00,
+        image = low_energy_image.image * intensity_scale_factor,
         x_axis = low_energy_image.x_axis,
         y_axis = low_energy_image.y_axis
     )
