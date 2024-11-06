@@ -234,11 +234,11 @@ def preprocess_spectrum_images(low_energy_image: ImageWithAxes, high_energy_imag
 
         return process_spectrum(spectrum_image)
 
-    low_energy_image, high_energy_image = preprocess_spectrum_image(low_energy_image, background=0.1710), preprocess_spectrum_image(high_energy_image, background=0.1845)
+    low_energy_image, high_energy_image = preprocess_spectrum_image(low_energy_image, background=5.225e-03), preprocess_spectrum_image(high_energy_image, background=5.261e-03)
 
     # scale low energy image to match intensity of high energy image
     low_energy_image = ImageWithAxes(
-        image = low_energy_image.image * 2.211,
+        image = low_energy_image.image * 2.551e+00,
         x_axis = low_energy_image.x_axis,
         y_axis = low_energy_image.y_axis
     )
