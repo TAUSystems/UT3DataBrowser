@@ -5,18 +5,17 @@ from typing import TYPE_CHECKING, NamedTuple, Optional, Protocol
 from datetime import datetime
 from datetime import timezone as tz
 
+import logging
+logger = logging.getLogger(__name__)
+
 from sqlalchemy import select
 
 if TYPE_CHECKING:
     from sqlalchemy import Row
 
-from .utils.measurement_db import get_sqlalchemy_engine, get_tables
+from .utils.measurement_db import measurement_db_engine
 from .settings import load_config
 from ..types import VariableName
-
-if load_config():
-    sqlalchemy_engine = get_sqlalchemy_engine()
-    tables = get_tables()
 
 class Scan(NamedTuple):
     timestamp: datetime
@@ -51,20 +50,28 @@ def row_to_scan(row: ScanRow) -> Scan:
             )
 
 def get_scans() -> list[Scan]:
+    if not measurement_db_engine.tables:
+        logger.error("Measurement DB tables not loaded. Cannot get scans.")
+        return []
+    
     try:
-        select_stmt = select(tables['scan']).order_by(tables['scan'].c.timestamp.desc())
-        with sqlalchemy_engine.connect() as connection:
+        select_stmt = select(measurement_db_engine.tables['scan']).order_by(measurement_db_engine.tables['scan'].c.timestamp.desc())
+        with measurement_db_engine.sqlalchemy_engine.connect() as connection:
             return [row_to_scan(row) for row in connection.execute(select_stmt)]
     except Exception as err:
         print(f"Error getting scans: {err}")
         return []
 
 def get_scan(timestamp: datetime) -> Scan:
-    with sqlalchemy_engine.connect() as connection:
-        row = connection.execute(select(tables['scan']).where(tables['scan'].c.timestamp == timestamp)).fetchone()
+    if not measurement_db_engine.tables:
+        logger.error("Measurement DB tables not loaded. Cannot get scan.")
+        return Scan()
+
+    with measurement_db_engine.sqlalchemy_engine.connect() as connection:
+        row = connection.execute(select(measurement_db_engine.tables['scan']).where(measurement_db_engine.tables['scan'].c.timestamp == timestamp)).fetchone()
         if row is None:
             raise ValueError(f"Scan with timestamp {timestamp} not found.")
-        
+
         return row_to_scan(row)
 
 
@@ -83,6 +90,8 @@ def get_scan_measurements_from_db(scan_timestamp: datetime, variable_names: Opti
         - shot_seq
         - value
     """
+    tables = measurement_db_engine.tables
+    
     select_stmt = (
         select(tables['variable'].c.name.label('variable_name'), 
                tables['burst'].c.timestamp.label('burst_timestamp'),
@@ -102,7 +111,7 @@ def get_scan_measurements_from_db(scan_timestamp: datetime, variable_names: Opti
     if variable_names is not None:
         select_stmt = select_stmt.where(tables['variable'].c.name.in_(variable_names))
 
-    with sqlalchemy_engine.connect() as connection:
+    with measurement_db_engine.sqlalchemy_engine.connect() as connection:
         return connection.execute(select_stmt).fetchall()
 
 

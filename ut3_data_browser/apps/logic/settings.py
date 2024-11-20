@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from platformdirs import user_data_dir
 from pathlib import Path
-from configparser import ConfigParser
 
 from dotenv import dotenv_values
 from os import environ
@@ -11,11 +10,37 @@ import toml
 
 from ..types import ConfigurationDict
 
+import logging
+logger = logging.getLogger(__name__)
+
 def load_config() -> ConfigurationDict:
     return UserDataConfiguration().load()
 
 def save_config(form_data: dict) -> None:
     UserDataConfiguration().save(form_data)
+
+def default_configuration_dict() -> ConfigurationDict:
+    return {
+        'scalars': {
+            'variables_shown': [],
+        },
+        'directories': {
+            'epics_daq_test_folder_path': '',
+        },
+        'measurement_db': {
+            'driver': '',
+            'host': '',
+            'port': 0,
+            'dbname': '',
+            'username': '',
+            'password': '',
+        },
+        'plot': {
+            'pointing_intensity_max': 0.0,
+            'spectrum_intensity_max': 0.0,
+            'spectrum_lineout_max': 0.0,
+        }
+    }
 
 class Configuration:
     def __init__(self):
@@ -111,7 +136,23 @@ class UserDataConfiguration(Configuration):
             toml.dump(config, f)
 
     def load(self) -> ConfigurationDict:
+        config = default_configuration_dict()
+
+        if not self.config_path().exists():
+            logger.error(f"Configuration file not found: {self.config_path()}")
+            return config
+
         try:
-            return toml.load(self.config_path())
-        except FileNotFoundError:
-            return {}
+            loaded_config = toml.load(self.config_path())
+        except toml.TomlDecodeError as err:
+            logger.error(f"Error parsing TOML file {self.config_path()}: {err}")
+            return config
+
+        for section_key, section_options in loaded_config.items():
+            try:
+                config[section_key].update(section_options)
+            except (TypeError, ValueError) as err:
+                logger.error(f"Error updating config section {section_key}: {err}")
+                continue
+
+        return config
