@@ -294,8 +294,9 @@ def plot_pointing_and_spectrum(burst_timestamp: datetime, shot_timestamp: dateti
         p = ax_spectrum.pcolormesh(image.x_axis[::3], image.y_axis[::3], image.image[::3, ::3])
         p.set_clim(0, config['plot']['spectrum_intensity_max'])
 
-    plot_spectrum_image(low_energy_image_nonoverlap_region)
-    plot_spectrum_image(overlap_image)
+    # plot_spectrum_image(low_energy_image_nonoverlap_region)
+    plot_spectrum_image(low_energy_image)
+    # plot_spectrum_image(overlap_image)
     plot_spectrum_image(high_energy_image_nonoverlap_region)
 
     ax_pointing.set(xlabel="horizontal angle [mrad]", ylabel="vertical angle [mrad]")
