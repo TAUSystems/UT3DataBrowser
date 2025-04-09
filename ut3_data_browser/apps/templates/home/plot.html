@@ -1,0 +1,125 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %} {{scan.session_timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z')}} / Scan {{scan.seq}} {% endblock title %}
+
+{% block content %}
+
+  <div class="header bg-primary pb-6">
+    <div class="container-fluid">
+      <div class="header-body">
+        <div class="row align-items-center py-4">
+          <div class="col-lg-6 col-7">
+            <h6 class="h2 text-white d-inline-block mb-0">{{scan.session_timestamp.strftime('%Y-%m-%d %H:%M:%S %Z')}} / Scan {{scan.seq}}</h6>
+          </div>
+          <div class="col-lg-6 col-5 text-right">
+            <a href="/scans" class="btn btn-sm btn-neutral">Scans</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Page content -->
+  <div class="container-fluid mt--6">
+    <div class="row">
+      <div class="col">
+
+        <div class="card card-stats">
+          <!-- Scan information -->
+          <div class="card-body">
+            <div class="row">
+              <div class="col">
+                <h5 class="card-title text-uppercase text-muted mb-0">Information</h5>
+              </div>
+            </div>
+            <h5>Session timestamp</h5>
+            <p class="text-sm">{{ scan.session_timestamp }}</p>
+            <h5>Scan number</h5>
+            <p class="text-sm">{{ scan.seq }}</p>
+            <h5>Scan timestamp</h5>
+            <p class="text-sm">{{ scan.timestamp }}</p>
+            <h5>Description</h5>
+            <p class="text-sm">{{ scan.title }}</p>
+            <h5>Notes</h5>
+            <p class="text-sm">{{ scan.notes }}</p>
+          </div>
+        </div>
+
+        <div class="card card-stats">
+          <!-- Scan images -->
+          <div class="card-body">
+            {% for burst in scan_results.bursts %}
+            <div id="burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}" class="burst">
+              <div id="burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}-summary" class="burst-summary">
+                <button data-toggle="collapse" data-target="#burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}-shots" aria-expanded="false">
+                  Burst {{ burst.seq }}
+                </button>
+                <div id="burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}-averages" class="burst-averages">
+                  {% for variable_name, value in burst.averages.items() %}
+                    {{ variable_name }} = {{ value }}<br/>
+                  {% endfor %}
+                </div>
+                <!-- TODO: waterfall spectrum image -->
+              </div>
+              <div id="burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}-shots" class="collapse burst-shots">
+                <table class="table align-items-center table-flush">
+                  <thead class="thead-light">
+                    <tr>
+                      <th scope="col" class="sort" data-sort="name">Measurements</th>
+                      <th scope="col" class="sort" data-sort="description">Pointing/Spectrum image</th>
+                    </tr>
+                  </thead>
+                  <tbody class="list">
+                    {% for shot_data in burst.shots %}
+                    <tr>
+                      <td scope="row">
+                        {% for variable_name, value in shot_data.measurements.items() %}
+                          {{ variable_name }} = {{ value }}<br/>
+                        {% endfor %}
+                      </td>
+                      <td>
+                        {% set shot_id = shot_data.timestamp.strftime('%Y-%m-%dT%H-%M-%S') %}
+                        {% set plot_url = url_for('home_blueprint.plotly_spectrum', 
+                                                   burst_timestamp=burst.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f'), 
+                                                   shot_timestamp=shot_data.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f')) %}
+                        
+                        <div id="plotly-spectrum-{{ shot_id }}"></div>
+                        <script>
+                          const containerId = "plotly-spectrum-{{ shot_id }}";
+                          const fetchUrl = "{{ plot_url }}";
+                      
+                          fetch(fetchUrl)
+                            .then(response => response.json())
+                            .then(fig => {
+                              Plotly.newPlot(containerId, fig.data, fig.layout);
+                            })
+                            .catch(error => {
+                              document.getElementById(containerId).innerHTML = "<p style='color: red;'>Failed to load plot</p>";
+                              console.error("Plotly fetch error:", error);
+                            });
+                        </script>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {% endfor %}
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    {% include "includes/footer.html" %}
+
+  </div>
+
+{% endblock content %}
+
+<!-- Specific JS goes HERE --> 
+{% block javascripts %}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+{% endblock javascripts %}
