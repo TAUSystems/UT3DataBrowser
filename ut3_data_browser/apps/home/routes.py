@@ -16,6 +16,7 @@ from ..logic.plots import plot_pointing_and_spectrum
 from .forms import SettingsForm
 from ..logic.settings import save_config, load_config
 
+
 @blueprint.route('/index')
 def index():
     return render_template('home/index.html', segment='index')
@@ -40,7 +41,6 @@ def show_scan(timestamp: str):
         scan_results = ScanData(scan_timestamp, [])
 
     return render_template("home/scan.html", scan=scan, scan_results=scan_results)
-
 @blueprint.route('/settings', methods=['GET', 'POST'])
 def settings():
 
@@ -160,42 +160,6 @@ def pointing_and_spectrum():
     with BytesIO() as pointing_and_spectrum_png_bytes:
         figure.savefig(pointing_and_spectrum_png_bytes, format='png')
         return Response(pointing_and_spectrum_png_bytes.getvalue(), mimetype='image/png')
-## duplicate scan endpoint
-@blueprint.route('/plot/<timestamp>')
-def show_plot_scan(timestamp: str):
-    try:
-        scan_timestamp: datetime = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%f')
-    except ValueError:
-        raise ValueError("timestamp must be in format %Y-%m-%dT%H:%M:%S.%f")
-    
-    try:
-        scan = get_scan(scan_timestamp)
-        scan_results = get_scan_results_for_scan_page(scan_timestamp)
-    except Exception as err:
-        scan = None
-        scan_results = ScanData(scan_timestamp, [])
-
-    return render_template("home/plot.html", scan=scan, scan_results=scan_results)
-## separate endpoint to call plotly plot function
-from flask import jsonify
-from ..logic.plots_interactive import plot_pointing_and_spectrum_plotly 
-
-@blueprint.route('/plotly_spectrum')
-def plotly_spectrum():
-    burst_timestamp = request.args.get('burst_timestamp')
-    shot_timestamp = request.args.get('shot_timestamp')
-
-    if not burst_timestamp or not shot_timestamp:
-        return {"error": "Missing parameters"}, 400
-
-    try:
-        burst_dt = datetime.strptime(burst_timestamp, '%Y-%m-%dT%H:%M:%S.%f')
-        shot_dt = datetime.strptime(shot_timestamp, '%Y-%m-%dT%H:%M:%S.%f')
-    except ValueError:
-        return {"error": "Invalid timestamp format"}, 400
-
-    fig = plot_pointing_and_spectrum_plotly(burst_dt, shot_dt)
-    return jsonify(fig.to_dict())
 
 @blueprint.app_errorhandler(404) 
 def not_found(e): 
