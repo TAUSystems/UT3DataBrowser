@@ -16,6 +16,7 @@ from ..logic.plots import plot_pointing_and_spectrum
 from .forms import SettingsForm
 from ..logic.settings import save_config, load_config
 
+
 @blueprint.route('/index')
 def index():
     return render_template('home/index.html', segment='index')
@@ -40,7 +41,6 @@ def show_scan(timestamp: str):
         scan_results = ScanData(scan_timestamp, [])
 
     return render_template("home/scan.html", scan=scan, scan_results=scan_results)
-
 @blueprint.route('/settings', methods=['GET', 'POST'])
 def settings():
 
