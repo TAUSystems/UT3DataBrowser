@@ -16,3 +16,10 @@
     padding: 5px 10px;
 }
 
+div.burst-averages td,
+div.shot-measurements td {
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-left: 6px;
+    padding-right: 6px;
+}

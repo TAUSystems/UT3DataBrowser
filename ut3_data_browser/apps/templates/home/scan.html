@@ -117,16 +117,18 @@
                     {% for shot_data in burst.shots %}
                     <tr>
                       <td scope="row">
-                        <table>
-                          <tbody>
-                            {% for variable_name, value in shot_data.measurements.items() %}
-                              <tr>
-                                <td>{{ variable_name }}</td>
-                                <td>{{ value }}</td>
-                              </tr>
-                            {% endfor %}
-                          </tbody>
-                        </table>
+                        <div id="shot-{{ shot_data.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}-measurements" class="shot-measurements">
+                          <table>
+                            <tbody>
+                              {% for variable_name, value in shot_data.measurements.items() %}
+                                <tr>
+                                  <td>{{ variable_name }}</td>
+                                  <td>{{ value }}</td>
+                                </tr>
+                              {% endfor %}
+                            </tbody>
+                          </table>
+                        </div>
                       </td>
                       <td>
                         <img 
