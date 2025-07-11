@@ -55,15 +55,22 @@
           <div class="card-body">
             <div class="mb-3">
               <div class="row">
-                <div class="col-md-4">
+                <div class="col-md-3">
+                  <label for="data-level-select">Data Level</label>
+                  <select class="form-control" id="data-level-select">
+                    <option value="shot">Shot Level</option>
+                    <option value="burst">Burst Level (Averages)</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
                   <label for="x-axis-select">X-Axis</label>
                   <select class="form-control" id="x-axis-select"></select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <label for="y-axis-select">Y-Axis</label>
                   <select class="form-control" id="y-axis-select"></select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <label>Bursts</label>
                   <div id="burst-checkboxes" class="row px-3"></div>
                 </div>
@@ -157,6 +164,8 @@
           {% for shot_data in burst.shots %}
           {
             timestamp: "{{ shot_data.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f') }}",
+            burst_shot_number: {{ loop.index }},
+            scan_shot_number: 0, 
             measurements: {
               {% for variable_name, value in shot_data.measurements.items() %}
               "{{ variable_name }}": {% if value is string %}"{{ value }}"{% elif value is none or value is not number or value|string == 'nan' or value|string == 'NaN' %}null{% else %}{{ value }}{% endif %}{% if not loop.last %},{% endif %}
@@ -169,6 +178,13 @@
       {% endfor %}
     ]
   };
+  
+  let scanShotCounter = 1;
+  scanData.bursts.forEach(burst => {
+    burst.shots.forEach(shot => {
+      shot.scan_shot_number = scanShotCounter++;
+    });
+  });
   
   // Simple debug log for scanData
   console.log("scanData:", scanData);
@@ -238,6 +254,52 @@
     return Array.from(variables).sort();
   };
 
+  const updateXAxisOptions = () => {
+    const dataLevel = document.getElementById('data-level-select').value;
+    const xSelect = document.getElementById('x-axis-select');
+    const variables = extractVariables();
+
+    const currentSelection = xSelect.value;
+    xSelect.innerHTML = '';
+    
+    if (dataLevel === 'burst') {
+      xSelect.innerHTML = '<option value="burst_shot_number">Burst Shot Number</option>';
+    } else {
+      xSelect.innerHTML = '<option value="scan_shot_number">Scan Shot Number</option>';
+    }
+
+    variables.forEach((variable, index) => {
+      xSelect.innerHTML += `<option value="${variable}">${variable}</option>`;
+    });
+    
+    if (currentSelection && Array.from(xSelect.options).some(option => option.value === currentSelection)) {
+      xSelect.value = currentSelection;
+    } else {
+
+      if (dataLevel === 'burst') {
+
+        const horizontalX = variables.find(v => v.includes('HorizontalX'));
+        if (horizontalX) {
+          xSelect.value = horizontalX;
+        } else if (variables.length > 0) {
+          xSelect.value = variables[0];
+        } else {
+          xSelect.value = 'burst_shot_number';
+        }
+      } else {
+
+        const horizontalX = variables.find(v => v.includes('HorizontalX'));
+        if (horizontalX) {
+          xSelect.value = horizontalX;
+        } else if (variables.length > 0) {
+          xSelect.value = variables[0];
+        } else {
+          xSelect.value = 'scan_shot_number';
+        }
+      }
+    }
+  };
+
   const initUI = () => {
     const variables = extractVariables();
     if (variables.length === 0) {
@@ -246,31 +308,25 @@
       return;
     }
     
+    const dataLevelSelect = document.getElementById('data-level-select');
     const xSelect = document.getElementById('x-axis-select');
     const ySelect = document.getElementById('y-axis-select');
     const burstBox = document.getElementById('burst-checkboxes');
     
-    if (!xSelect || !ySelect || !burstBox) {
+    if (!dataLevelSelect || !xSelect || !ySelect || !burstBox) {
       console.error("UI elements not found");
       return;
     }
     
-    xSelect.innerHTML = '<option value="shot_number">Shot Number</option>';
-    
+    ySelect.innerHTML = '';
     variables.forEach((variable, index) => {
-  
-      const safeVar = variable.replace(/:/g, '_');
-      xSelect.innerHTML += `<option value="${variable}">${variable}</option>`;
       ySelect.innerHTML += `<option value="${variable}">${variable}</option>`;
-
       if (variable.includes('mean_energy_MeV')) ySelect.value = variable;
-      if (variable.includes('HorizontalX')) xSelect.value = variable;
     });
     
-    // If we didn't find the preferred defaults, use first two variables
     if (!ySelect.value && variables.length > 0) ySelect.value = variables[0];
-    if (!xSelect.value && variables.length > 1) xSelect.value = variables[1];
-    if (!xSelect.value && variables.length > 0) xSelect.value = variables[0];
+    
+    updateXAxisOptions();
     
     scanData.bursts.forEach(burst => {
       const checkDiv = document.createElement('div');
@@ -284,6 +340,10 @@
       burstBox.appendChild(checkDiv);
     });
     
+    dataLevelSelect.addEventListener('change', () => {
+      updateXAxisOptions();
+      updatePlot();
+    });
     xSelect.addEventListener('change', updatePlot);
     ySelect.addEventListener('change', updatePlot);
     
@@ -296,47 +356,61 @@
 
   const updatePlot = () => {
     try {
+      const dataLevel = document.getElementById('data-level-select').value;
       const xVar = document.getElementById('x-axis-select').value;
       const yVar = document.getElementById('y-axis-select').value;
       const selectedBursts = Array.from(document.querySelectorAll('.burst-checkbox:checked'))
         .map(cb => parseInt(cb.value));
       
-      console.log(`Plotting ${yVar} vs ${xVar} for bursts:`, selectedBursts);
+      console.log(`Plotting ${yVar} vs ${xVar} for ${dataLevel} level data, bursts:`, selectedBursts);
       
       if (selectedBursts.length === 0) {
         document.getElementById('plotly-chart').innerHTML = 
           `<div id="no-burst-alert" class="alert alert-warning">Please select at least one burst to plot</div>`;
         return;
       }
-      
-      // Remove no burst alert
+
       const noBurstAlert = document.getElementById('no-burst-alert');
       if (noBurstAlert) {
         noBurstAlert.remove();
       }
       
       const plotData = [];
-      const useShot = xVar === 'shot_number';
-
       let nanCountX = 0;
       let nanCountY = 0;
       let totalPoints = 0;
 
       const prevMsg = document.getElementById('nan-message');
       if (prevMsg) prevMsg.remove();
+      
+      const noDataAlert = document.getElementById('no-data-alert');
+      if (noDataAlert) noDataAlert.remove();
 
-      selectedBursts.forEach(burstSeq => {
-        const burst = scanData.bursts.find(b => b.seq === burstSeq);
-        if (!burst) return;
-        
+      if (dataLevel === 'burst') {
         const xValues = [];
         const yValues = [];
+        const burstLabels = [];
         
-        burst.shots.forEach((shot, index) => {
+        selectedBursts.forEach(burstSeq => {
+          const burst = scanData.bursts.find(b => b.seq === burstSeq);
+          if (!burst || !burst.averages) return;
+          
           totalPoints++;
+          
+          let xValue, yValue;
+          if (xVar === 'burst_shot_number' || xVar === 'scan_shot_number') {
+            xValue = burst.seq; 
+          } else if (xVar in burst.averages) {
+            xValue = burst.averages[xVar];
+          } else {
+            return; 
+          }
 
-          let xValue = useShot ? index + 1 : shot.measurements[xVar];
-          let yValue = shot.measurements[yVar];
+          if (yVar in burst.averages) {
+            yValue = burst.averages[yVar];
+          } else {
+            return; 
+          }
           
           if (xValue === undefined || yValue === undefined || 
               xValue === null || yValue === null) {
@@ -356,33 +430,116 @@
           if (!isFinite(xNum) || !isFinite(yNum)) {
             return;
           }
+          
           xValues.push(xNum);
           yValues.push(yNum);
+          burstLabels.push(`Burst ${burst.seq}`);
         });
         
         if (xValues.length > 0 && yValues.length > 0) {
-          const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b'];
-          const symbols = ['circle', 'square', 'diamond', 'cross', 'x', 'triangle-up'];
-          
           plotData.push({
             x: xValues,
             y: yValues,
             mode: 'markers',
             type: 'scatter',
-            name: `Burst ${burst.seq}`,
+            name: 'Burst Averages',
+            text: burstLabels,
+            hovertemplate: '<b>%{text}</b><br>' +
+                          `${xVar}: %{x}<br>` +
+                          `${yVar}: %{y}<br>` +
+                          '<extra></extra>',
             marker: {
-              symbol: symbols[burst.seq % symbols.length],
-              size: 8 + (burst.seq % 3), 
-              color: colors[burst.seq % colors.length],
-              opacity: 0.75 + (burst.seq % 2) * 0.1 
+              symbol: 'circle',
+              size: 12,
+              color: '#1f77b4',
+              opacity: 0.8
             }
           });
         }
-      });
+        
+      } else {
+        const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b'];
+        const symbols = ['circle', 'square', 'diamond', 'cross', 'x', 'triangle-up'];
+        
+        selectedBursts.forEach(burstSeq => {
+          const burst = scanData.bursts.find(b => b.seq === burstSeq);
+          if (!burst || !burst.shots) return;
+          
+          const xValues = [];
+          const yValues = [];
+          const shotLabels = [];
+          
+          burst.shots.forEach((shot, index) => {
+            totalPoints++;
+            
+            let xValue, yValue;
+
+            if (xVar === 'burst_shot_number') {
+              xValue = shot.burst_shot_number;
+            } else if (xVar === 'scan_shot_number') {
+              xValue = shot.scan_shot_number;
+            } else if (xVar in shot.measurements) {
+              xValue = shot.measurements[xVar];
+            } else {
+              return; 
+            }
+
+            if (yVar in shot.measurements) {
+              yValue = shot.measurements[yVar];
+            } else {
+              return; 
+            }
+            
+            if (xValue === undefined || yValue === undefined || 
+                xValue === null || yValue === null) {
+              return;
+            }
+
+            const xNum = Number(xValue);
+            const yNum = Number(yValue); 
+            if (isNaN(xNum)) {
+              nanCountX++;
+              return;
+            }
+            if (isNaN(yNum)) {
+              nanCountY++;
+              return;
+            }
+            if (!isFinite(xNum) || !isFinite(yNum)) {
+              return;
+            }
+            
+            xValues.push(xNum);
+            yValues.push(yNum);
+            shotLabels.push(`Burst ${burst.seq}, Shot ${shot.burst_shot_number} (Scan #${shot.scan_shot_number})`);
+          });
+          
+          if (xValues.length > 0 && yValues.length > 0) {
+            plotData.push({
+              x: xValues,
+              y: yValues,
+              mode: 'markers',
+              type: 'scatter',
+              name: `Burst ${burst.seq}`,
+              text: shotLabels,
+              hovertemplate: '<b>%{text}</b><br>' +
+                            `${xVar}: %{x}<br>` +
+                            `${yVar}: %{y}<br>` +
+                            '<extra></extra>',
+              marker: {
+                symbol: symbols[burst.seq % symbols.length],
+                size: 8 + (burst.seq % 3), 
+                color: colors[burst.seq % colors.length],
+                opacity: 0.75 + (burst.seq % 2) * 0.1 
+              }
+            });
+          }
+        });
+      }
       
       if (plotData.length === 0) {
         document.getElementById('plotly-chart').innerHTML = 
-          `<div class="alert alert-warning">No data points available. Check if the selected variables contain valid values.</div>`;
+          `<div class="alert alert-warning" id="no-data-alert">No data points available. Check if the selected variables contain valid values for ${dataLevel} level data.</div>`;
         return;
       }
     
@@ -392,13 +549,10 @@
         nanMsg.className = 'alert alert-info mt-3';
         
         if (nanCountX > 0 && nanCountY > 0) {
-          
           nanMsg.innerHTML = `Found missing data: ${nanCountX} points in ${xVar} and ${nanCountY} points in ${yVar} were excluded.`;
         } else if (nanCountX > 0) {
-
           nanMsg.innerHTML = `Note: ${nanCountX} invalid values detected in ${xVar} and were skipped.`;
         } else {
-
           nanMsg.innerHTML = `${nanCountY} NaN values found in ${yVar} were omitted from the plot.`;
         }
         
@@ -409,7 +563,7 @@
 
       const layout = {
         title: {
-          text: `${yVar} vs ${xVar}`,
+          text: `${yVar} vs ${xVar} (${dataLevel.charAt(0).toUpperCase() + dataLevel.slice(1)} Level)`,
           font: { family: 'Arial', size: 18 }
         },
         xaxis: { 
@@ -426,10 +580,18 @@
           zeroline: true,
           zerolinecolor: '#a8a8a8'
         },
-        margin: { t: 50, r: 25, b: 70, l: 60 },
+        margin: { t: 50, r: 150, b: 70, l: 60 },
         font: { family: 'Arial' },
         showlegend: true,
-        legend: { x: 0.02, y: 0.98 },
+        legend: { 
+          x: 1.02, 
+          y: 1,
+          xanchor: 'left',
+          yanchor: 'top',
+          bgcolor: 'rgba(255, 255, 255, 0.8)',
+          bordercolor: '#ccc',
+          borderwidth: 1
+        },
         hovermode: 'closest'
       };
       
@@ -438,7 +600,7 @@
         displayModeBar: plotData[0]?.x.length > 10,
         toImageButtonOptions: {
           format: 'png',
-          filename: `plot_${xVar}_vs_${yVar}`,
+          filename: `plot_${xVar}_vs_${yVar}_${dataLevel}`,
           scale: 2
         }
       };

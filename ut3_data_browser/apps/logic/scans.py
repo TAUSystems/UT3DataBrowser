@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from math import isnan
 from operator import attrgetter
 from typing import TYPE_CHECKING, NamedTuple, Optional, Protocol
+from collections.abc import Iterable
 from datetime import datetime
 from datetime import timezone as tz
 
@@ -185,10 +187,22 @@ def calculate_burst_averages(burst: BurstData) -> dict[VariableName, float]:
                 measurements[variable_name] = []
             measurements[variable_name].append(value)
 
-    return {variable_name: sum(values) / len(values) 
+    def nanmean(values: Iterable[float]) -> float:
+        """ Calculates the mean of a list of values, ignoring NaN values.
+            Returns NaN if all values are NaN.
+            Named after the numpy.nanmean function.
+        """
+        total = 0.0
+        count = 0
+        for v in values:
+            if not isnan(v):
+                total += v
+                count += 1
+        return total / count if count > 0 else float('nan')
+
+    return {variable_name: nanmean(values)
             for variable_name, values in measurements.items()
            }
-
 
 def get_scan_results_for_scan_page(scan_timestamp: datetime, variable_names: Optional[list[str]] = None) -> ScanData:
 
