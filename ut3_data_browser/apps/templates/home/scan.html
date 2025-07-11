@@ -93,9 +93,16 @@
                   Burst {{ burst.seq }}
                 </button>
                 <div id="burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}-averages" class="burst-averages">
-                  {% for variable_name, value in burst.averages.items() %}
-                    {{ variable_name }} = {{ value }}<br/>
-                  {% endfor %}
+                  <table>
+                    <tbody>
+                      {% for variable_name, value in burst.averages.items() %}
+                        <tr>
+                          <td>{{ variable_name }}</td>
+                          <td>{{ value }}</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
                 </div>
               </div>
               <div id="burst-{{ burst.timestamp.strftime('%Y-%m-%d-%H-%M-%S%Z') }}-shots" class="collapse burst-shots">
@@ -110,9 +117,16 @@
                     {% for shot_data in burst.shots %}
                     <tr>
                       <td scope="row">
-                        {% for variable_name, value in shot_data.measurements.items() %}
-                          {{ variable_name }} = {{ value }}<br/>
-                        {% endfor %}
+                        <table>
+                          <tbody>
+                            {% for variable_name, value in shot_data.measurements.items() %}
+                              <tr>
+                                <td>{{ variable_name }}</td>
+                                <td>{{ value }}</td>
+                              </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
                       </td>
                       <td>
                         <img 
