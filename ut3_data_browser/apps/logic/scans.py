@@ -29,6 +29,7 @@ class Scan(NamedTuple):
 if TYPE_CHECKING:
     class MeasurementRow(Row, Protocol):
         variable_name: str
+        display_name: str
         burst_timestamp: datetime
         burst_seq: int
         shot_timestamp: datetime
@@ -86,6 +87,7 @@ def get_scan_measurements_from_db(scan_timestamp: datetime, variable_names: Opti
     list[Row]
         List of rows with the following attributes:
         - variable_name
+        - display_name
         - burst_timestamp
         - burst_seq
         - shot_timestamp
@@ -96,6 +98,7 @@ def get_scan_measurements_from_db(scan_timestamp: datetime, variable_names: Opti
     
     select_stmt = (
         select(tables['variable'].c.name.label('variable_name'), 
+               tables['variable'].c.display_name.label('display_name'),
                tables['burst'].c.timestamp.label('burst_timestamp'),
                tables['burst'].c.seq.label('burst_seq'),
                tables['shot'].c.timestamp.label('shot_timestamp'),
@@ -155,13 +158,18 @@ def organize_scan_measurements(scan_measurements: list[MeasurementRow]) -> list[
 
     # then convert the Row objects into ShotData objects and BurstData objects
     bursts: list[BurstData] = []
+    
+    def get_display_name(row: MeasurementRow) -> str:
+        """ Returns the display name of a measurement row, or the variable name if not set """
+        return row.display_name if row.display_name else row.variable_name
+
     for burst_timestamp, shots_in_burst in measurements_by_burst_and_shot.items():
 
         shots: list[ShotData] = [
             ShotData(
                 timestamp = shot_timestamp.replace(tzinfo=tz.utc),
                 seq = measurement_rows_in_shot[0].shot_seq,
-                measurements = {measurement_row.variable_name: measurement_row.value for measurement_row in measurement_rows_in_shot},
+                measurements = {get_display_name(measurement_row): measurement_row.value for measurement_row in measurement_rows_in_shot},
             ) for shot_timestamp, measurement_rows_in_shot in shots_in_burst.items()
         ]
 
